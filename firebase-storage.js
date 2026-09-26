@@ -51,7 +51,7 @@
         if(!chunks.length||chunks.length>100)throw Error('クラウド保存の上限（500万文字）です。記録を書き出してください。');
         return dbLib.runTransaction(db,async tx=>{
           const snapshot=await tx.get(r.meta),revision=snapshot.exists()?snapshot.data().revision:0;
-          if(revision!==expectedRevision)throw Error('別の端末の更新があります。クラウド記録を読み込んでから保存してください。現在の端末の記録は残っています。');
+          if(revision!==expectedRevision){const error=Error('別の端末の更新があります。再同期します。');error.code='study/conflict';throw error;}
           if((await check()).uid!==r.uid)throw Error('ログイン状態が変わりました。');
           const next=revision+1;
           chunks.forEach((text,i)=>tx.set(r.chunk(i),{revision:next,text}));
