@@ -455,7 +455,7 @@ navigate('home');if(loadWarning)notice(loadWarning);
 (function(){
   'use strict';
   const config=globalThis.SPARK_FIREBASE_CONFIG;
-  const configured=!!(config?.ownerEmail&&['apiKey','authDomain','projectId','appId'].every(k=>config.firebase?.[k]));
+  const configured=!!((config?.ownerEmail||config?.ownerEmailSha256)&&['apiKey','authDomain','projectId','appId'].every(k=>config.firebase?.[k]));
   let adapter,user,busy=false,revision=0,epoch=0,message='この端末に自動保存中。クラウドの保存・読込は下のボタンで行います。';
   const panel=document.createElement('details');panel.id='cloudPanel';panel.className='card';
   panel.innerHTML='<summary>ログイン・クラウド保存</summary><p id="cloudStatus" role="status" aria-live="polite"></p><div class="toolbar"><button id="cloudLogin">Googleでログイン</button><button id="cloudSave">クラウドへ保存</button><button id="cloudLoad">クラウドから読込</button><button id="cloudLogout">ログアウト</button></div><p class="small muted">端末を替える前に保存し、次の端末では読込してください。読込前の端末記録はバックアップされます。ログアウト後もこの端末の学習記録は残ります。</p><a href="Firebase設定手順.md" target="_blank">初回設定の手順</a>';

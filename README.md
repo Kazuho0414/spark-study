@@ -11,10 +11,10 @@ ZIPファイル自体をアップロードしてもサイトにはなりませ�
 
 ## Googleログインと保存
 
-教材はFirebase未設定でも利用でき、端末内へ自動保存されます。
-Googleログイン・クラウド保存には、FirebaseプロジェクトとFirestoreの設定が必要です。
+接続先は Firebase spark-study-812e6 です。端末内へ自動保存し、クラウドは保存・読込ボタンで操作します。
+GoogleログインとFirestoreの本人専用ルールを設定して利用します。以下は再設定する場合の手順です。
 
-1. `firebase-config.js` の公開設定と本人のGoogleメールアドレスを入力します。
+1. `firebase-config.js` の公開設定を入力します。現在は本人メールのSHA-256ハッシュで照合する設定です。
 2. Firebase AuthenticationでGoogleを有効にします。
 3. Authentication → Settings → Authorized domains に `ユーザー名.github.io` を追加します。
    `https://`・リポジトリ名・末尾の `/` は入れません。
