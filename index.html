@@ -38,6 +38,7 @@ html[data-theme="dark"] .qgrid button.nav-wrong{background:#642d33;color:#ffdcdf
 .bilingual{white-space:pre-wrap;overflow-wrap:anywhere;margin:12px 0}.bilingual>[lang=ja]{border-left:3px solid var(--teal);padding:8px 12px;margin-top:8px}.english-term{border:1px solid var(--line);border-radius:8px;padding:16px;margin:12px 0}.english-term p{white-space:pre-wrap;overflow-wrap:anywhere}.english-reflection{display:block;margin:18px 0}.english-reflection select{display:block;margin:8px 0}.translation-panel input{display:block;width:100%;margin:8px 0}
 
 .english-reflection{border:1px solid var(--line);border-radius:8px;padding:14px;min-width:0}.english-reflection legend{font-size:15px}.reading-choices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.reading-choices label{display:flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:7px;padding:10px;font-size:14px;min-width:0}.reading-choices label:has(input:checked){border-color:var(--teal);background:color-mix(in srgb,var(--teal) 15%,transparent)}.reading-choices input{flex-shrink:0}.translation-panel[data-japanese-translation]{margin-top:20px}.question-card>.nav{margin-bottom:24px}@media(max-width:450px){.reading-choices{gap:5px}.reading-choices label{padding:8px 4px;font-size:12px;align-items:flex-start}}
+.time-study-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.time-study-grid>div{border:1px solid var(--line);padding:16px;border-radius:8px}.time-study-grid button{width:100%}@media(max-width:450px){.time-study-grid{gap:6px}.time-study-grid>div{padding:12px 8px}.time-study-grid p{font-size:12px}}
 </style></head><body>
 <header><small>APACHE SPARK · PYTHON</small><div class="heading-row"><h1>Spark 合格演習室</h1><button id="themeToggle" aria-label="ダークモード" aria-pressed="true">表示：ダーク</button></div><div class="sub">模試・類題・弱点分析・間隔を空けた復習</div></header>
 <div class="wrap"><nav class="toolbar" aria-label="メインメニュー"><button data-nav="home">ホーム</button><button data-nav="study">復習・ランダム</button><button data-nav="analytics">弱点分析</button><button data-nav="history">履歴・解説</button><button data-nav="drills">補強42問</button><button data-nav="english">英語の復習</button><button data-nav="records">記録</button></nav><div id="status" role="status" aria-live="polite"></div><main id="app"></main><footer>独自作成の試験対策教材です。採点・学習記録はこのブラウザ内で処理します。ブラウザ保存が無効な場合は記録の書き出しを利用してください。正答率・定着指標は合格保証ではありません。</footer></div>
@@ -533,7 +534,38 @@ const EnglishStudy=(()=>{
  }
  function term(id){return terms.find(t=>t.id===id);}
  function saved(state){return Object.keys(state.settings).filter(k=>k.startsWith('english-word:')&&state.settings[k]).map(k=>{const parts=k.slice(13).split('|');return {term:term(parts[0]),id:parts[1],key:k};}).filter(x=>x.term&&Q[x.id]);}
- return {matches,entries,queue,term,saved};
+ const WORD_INTERVALS=[0,1,3,7,14,30,60],WORD_RETRY=600;
+ const validSecond=x=>Number.isSafeInteger(x)&&x>=0&&x<1e12;
+ function wordSchedule(state,key,now=Date.now()){
+  let value;try{value=JSON.parse(state.settings['word-schedule:'+key]);}catch{}
+  if(!value||value.v!==1||!Number.isInteger(value.stage)||value.stage<0||value.stage>=WORD_INTERVALS.length||!['yes','no'].includes(value.result)||!['due','graded','advanced'].every(k=>validSecond(value[k]))){
+   const result=state.settings['word-result:'+key],at=state.settings['word-date:'+key];
+   // Old self-reviews remain useful: derive their first due date without erasing them.
+   value=['yes','no'].includes(result)&&validSecond(at)&&at>0?{v:1,stage:result==='yes'?1:0,due:at+(result==='yes'?86400:WORD_RETRY),graded:at,advanced:result==='yes'?at:0,result}:null;
+  }
+  return value?{...value,isNew:false,dueNow:value.due<=Math.floor(now/1000),intervalDays:WORD_INTERVALS[value.stage]}:{v:1,stage:0,due:0,graded:0,advanced:0,result:null,isNew:true,dueNow:true,intervalDays:0};
+ }
+ function wordQueue(state,words,now=Date.now()){
+  return words.map(x=>({...x,schedule:wordSchedule(state,x.key,now)})).sort((a,b)=>{
+   const rank=x=>x.schedule.isNew?1:x.schedule.dueNow?0:2;
+   return rank(a)-rank(b)||a.schedule.due-b.schedule.due||a.key.localeCompare(b.key);
+  });
+ }
+ function gradeWord(state,key,result,now=Date.now()){
+  if(!['yes','no'].includes(result)||typeof key!=='string'||!key.startsWith('english-'))throw new Error('英語集の復習記録が不正です。');
+  const at=Math.floor(now/1000);if(!validSecond(at))throw new Error('復習日時が不正です。');
+  const old=wordSchedule(state,key,now);let stage=old.stage,due=old.due,advanced=old.advanced;
+  if(result==='no'){stage=0;due=at+WORD_RETRY;}
+  else if(old.isNew||old.stage===0){stage=1;due=at+86400;advanced=at;}
+  else if(old.dueNow&&at-old.advanced>=20*3600&&new Date(old.advanced*1000).toDateString()!==new Date(now).toDateString()){
+   stage=Math.min(stage+1,WORD_INTERVALS.length-1);due=at+WORD_INTERVALS[stage]*86400;advanced=at;
+  }
+  // One atomic value avoids mixing a due date and stage from separate devices.
+  state.settings['word-schedule:'+key]=JSON.stringify({v:1,stage,due,graded:at,advanced,result});
+  state.settings['word-result:'+key]=result;state.settings['word-date:'+key]=at;
+  return wordSchedule(state,key,now);
+ }
+ return {matches,entries,queue,term,saved,wordSchedule,wordQueue,gradeWord};
 })();
 function bilingual(en,ja){
  const pair=(e,j)=>`<div class="bilingual"><div lang="en">${esc(e)}</div><div lang="ja" class="muted">${esc(j)}</div></div>`;
@@ -562,12 +594,51 @@ function bindEnglish(a){
 function englishWords(){const predefined=EnglishStudy.saved(state).map(x=>({...x,en:x.term.en,ja:x.term.ja,note:x.term.note}));const custom=Object.entries(state.settings).filter(([k,v])=>k.startsWith('english-custom:')&&typeof v==='string').flatMap(([key,v])=>{try{const x=JSON.parse(v);return typeof x.en==='string'&&typeof x.ja==='string'&&Q[x.id]?[{key,...x,note:''}]:[];}catch{return [];}});return [...predefined,...custom];}
 function englishDashboard(){
  const rows=EnglishStudy.entries(state,E),queue=EnglishStudy.queue(state,E),words=englishWords(),difficult=rows.filter(r=>r.reading==='difficult').length,clear=rows.filter(r=>r.reading==='clear').length;
- app.innerHTML=`<h2>英語の読み取り・自分の英語集</h2><p>問題の回答前は英語だけ。日本語・単語・読み解きは回答後に確認できます。</p><div class="metrics"><div><b>${rows.filter(r=>r.viewed).length}</b><span>回答後に英文サポートを表示した回答</span></div><div><b>${difficult}</b><span>読み違いの自己記録</span></div><div><b>${clear}</b><span>読み取れた自己記録</span></div><div><b>${words.length}</b><span>保存した表現・例文</span></div></div><p class="small muted">正答率は元の英語での回答から計算します。訳を開いたことだけで英語力・理解度を判定しません。旧記録の補助利用は不明です。回答時間から英語力を推定しません。</p><section class="card"><h3>正誤と英文の読み取り（別々に集計）</h3><table><thead><tr><th>自己記録</th><th>正答 / 回答</th></tr></thead><tbody>${[['clear','読み取れた'],['difficult','読み違えた'],['unknown','未記録']].map(([k,label])=>{const group=rows.filter(r=>r.reading===k);return `<tr><td>${label}</td><td>${group.filter(r=>r.right).length} / ${group.length}</td></tr>`;}).join('')}</tbody></table><p class="small muted">読み取れて誤答した問題は、技術知識の再確認の候補です。原因は自動で断定しません。</p></section><section class="card"><h3>英語だけで再挑戦</h3><p>読み違えた問題を翌日以降に再確認します。前の記録から20時間以上空けて正解し、再び読み違いを記録しなければ再挑戦待ちから外します。英語力の保証ではありません。</p><div class="toolbar">${btn('期限が来た問題を再挑戦',`id="englishDue" ${queue.some(r=>r.due)?'':'disabled'}`,true)}${btn('読み違えた問題を今すぐ練習',`id="englishAll" ${queue.length?'':'disabled'}`)}${btn('英語模試（提出後に解説）','id="englishMock"')}</div>${queue.map(r=>`<p>${esc(r.id)} · ${r.due?'復習できます':date(r.dueAt)+'以降'} · ${esc(Q[r.id].topic||'')}</p>`).join('')||'<p>再挑戦待ちはありません。</p>'}</section><section class="card"><h3>自分の英語集</h3><p>意味は最初は隠しています。思い出してから「答え合わせ」を開いてください。</p><label>表現を検索<input id="englishSearch" type="text" placeholder="英語・日本語・問題ID"></label><div id="englishWords"></div></section>`;
+ app.innerHTML=`<h2>英語の読み取り・自分の英語集</h2><p>問題の回答前は英語だけ。日本語・単語・読み解きは回答後に確認できます。</p><div class="metrics"><div><b>${rows.filter(r=>r.viewed).length}</b><span>回答後に英文サポートを表示した回答</span></div><div><b>${difficult}</b><span>読み違いの自己記録</span></div><div><b>${clear}</b><span>読み取れた自己記録</span></div><div><b>${words.length}</b><span>保存した表現・例文</span></div></div><p class="small muted">正答率は元の英語での回答から計算します。訳を開いたことだけで英語力・理解度を判定しません。旧記録の補助利用は不明です。回答時間から英語力を推定しません。</p><section class="card"><h3>正誤と英文の読み取り（別々に集計）</h3><table><thead><tr><th>自己記録</th><th>正答 / 回答</th></tr></thead><tbody>${[['clear','読み取れた'],['difficult','読み違えた'],['unknown','未記録']].map(([k,label])=>{const group=rows.filter(r=>r.reading===k);return `<tr><td>${label}</td><td>${group.filter(r=>r.right).length} / ${group.length}</td></tr>`;}).join('')}</tbody></table><p class="small muted">読み取れて誤答した問題は、技術知識の再確認の候補です。原因は自動で断定しません。</p></section><section class="card"><h3>英語だけで再挑戦</h3><p>読み違えた問題を翌日以降に再確認します。前の記録から20時間以上空けて正解し、再び読み違いを記録しなければ再挑戦待ちから外します。英語力の保証ではありません。</p><div class="toolbar">${btn('期限が来た問題を再挑戦',`id="englishDue" ${queue.some(r=>r.due)?'':'disabled'}`,true)}${btn('読み違えた問題を今すぐ練習',`id="englishAll" ${queue.length?'':'disabled'}`)}${btn('英語模試（提出後に解説）','id="englishMock"')}</div>${queue.map(r=>`<p>${esc(r.id)} · ${r.due?'復習できます':date(r.dueAt)+'以降'} · ${esc(Q[r.id].topic||'')}</p>`).join('')||'<p>再挑戦待ちはありません。</p>'}</section><section class="card"><h3>自分の英語集 · 間隔を空けて復習</h3><p>意味を思い出してから「答え合わせ」を開きます。思い出せると1日 → 3日 → 7日 → 14日 → 30日 → 60日、もう一度復習なら10分後に確認します。</p><p class="small muted">期限到来と前回の段階更新から20時間以上経過し、端末の日付が変わると次の段階へ進みます。同日や期限前の正解を重ねても段階は進みません。間隔は学習の目安です。</p><div class="toolbar">${btn('今日の復習','id="wordScopeDue" aria-pressed="true"',true)}${btn('すべての表現','id="wordScopeAll" aria-pressed="false"')}</div><p id="wordReviewCount" class="small"></p><p id="wordReviewResult" role="status" tabindex="-1"></p><label>表現を検索<input id="englishSearch" type="text" placeholder="英語・日本語・問題ID"></label><div id="englishWords"></div></section>`;
  const start=due=>begin({key:'english-'+Date.now(),mode:'english',title:'英語の読み違い再挑戦',ids:queue.filter(r=>!due||r.due).map(r=>r.id),immediateFeedback:true});
  $('#englishDue').onclick=()=>start(true);$('#englishAll').onclick=()=>start(false);$('#englishMock').onclick=()=>begin({key:'englishmock-'+Date.now(),mode:'englishmock',title:'英語模試',ids:E.selectQuestions(state,{kind:'random',count:45,reserveM4:state.settings.reserveM4!==false}),minutes:90,immediateFeedback:false});
- const render=()=>{const needle=$('#englishSearch').value.toLowerCase();$('#englishWords').innerHTML=words.filter(x=>[x.en,x.ja,x.id].join(' ').toLowerCase().includes(needle)).map((x,i)=>`<article class="english-term"><h4 lang="en">${esc(x.en)}</h4><p class="small">例文：${esc(x.id)} · ${esc(wordExample(x).label)}</p><p lang="en">${esc(wordExample(x).en)}</p><details data-word-reveal><summary>意味を思い出して答え合わせ</summary><p>${esc(x.ja)}</p><p>${esc(x.note)}</p><div class="toolbar">${btn('思い出せた',`data-word-grade="${esc(x.key)}" data-grade="yes"`)}${btn('もう一度復習',`data-word-grade="${esc(x.key)}" data-grade="no"`)}</div></details><p class="small">前回：${state.settings['word-result:'+x.key]==='yes'?'思い出せた':state.settings['word-result:'+x.key]==='no'?'もう一度復習':'未記録'} ${date((state.settings['word-date:'+x.key]||0)*1000)}</p></article>`).join('')||'<p>保存した表現はありません。回答後の英語サポートから追加できます。</p>';app.querySelectorAll('[data-word-grade]').forEach(b=>b.onclick=()=>{const k=b.dataset.wordGrade;state.settings['word-result:'+k]=b.dataset.grade;state.settings['word-date:'+k]=Math.floor(Date.now()/1000);save();b.textContent='記録しました';notice('英語集の復習結果を保存しました。');});};
- $('#englishSearch').oninput=render;render();
+ let wordScope='due';
+ const nextLabel=s=>s.isNew?'未学習':s.dueNow?'復習期限に達しています':'次回：'+new Date(s.due*1000).toLocaleString('ja-JP');
+ const render=()=>{
+  const now=Date.now(),scheduled=EnglishStudy.wordQueue(state,words,now),due=scheduled.filter(x=>x.schedule.dueNow),needle=$('#englishSearch').value.trim().toLowerCase(),shown=(wordScope==='due'?due:scheduled).filter(x=>[x.en,x.ja,x.id].join(' ').toLowerCase().includes(needle));
+  $('#wordReviewCount').textContent='今の復習：'+due.length+'件（期限到来 '+due.filter(x=>!x.schedule.isNew).length+'件・未学習 '+due.filter(x=>x.schedule.isNew).length+'件） / 保存 '+words.length+'件';
+  $('#wordScopeDue').setAttribute('aria-pressed',String(wordScope==='due'));$('#wordScopeAll').setAttribute('aria-pressed',String(wordScope==='all'));
+  const next=scheduled.filter(x=>!x.schedule.dueNow).sort((a,b)=>a.schedule.due-b.schedule.due)[0];
+  const empty=!words.length?'保存した表現はありません。回答後の英文サポートから追加できます。':needle?'この範囲には検索に一致する表現がありません。':wordScope==='due'?'今、復習する表現はありません。'+(next?nextLabel(next.schedule)+'。「すべての表現」から期限前でも練習できます。':''):'保存した表現はありません。';
+  $('#englishWords').innerHTML=shown.map(x=>`<article class="english-term" data-word-card="${esc(x.key)}"><h4 lang="en">${esc(x.en)}</h4><p class="small"><b>${esc(nextLabel(x.schedule))}</b>${x.schedule.intervalDays?' · 復習間隔 '+x.schedule.intervalDays+'日':''}</p><p class="small">例文：${esc(x.id)} · ${esc(wordExample(x).label)}</p><p lang="en">${esc(wordExample(x).en)}</p><details data-word-reveal><summary>意味を思い出して答え合わせ</summary><p>${esc(x.ja)}</p><p>${esc(x.note)}</p><div class="toolbar">${btn('思い出せた',`data-word-grade="${esc(x.key)}" data-grade="yes"`)}${btn('もう一度復習',`data-word-grade="${esc(x.key)}" data-grade="no"`)}</div></details><p class="small">前回：${x.schedule.result==='yes'?'思い出せた':x.schedule.result==='no'?'もう一度復習':'未記録'} ${date(x.schedule.graded*1000)}</p></article>`).join('')||'<p>'+esc(empty)+'</p>';
+  app.querySelectorAll('[data-word-grade]').forEach(b=>b.onclick=()=>{
+   const k=b.dataset.wordGrade,result=EnglishStudy.gradeWord(state,k,b.dataset.grade),word=words.find(x=>x.key===k);save();render();
+   const message=(word?.en||'表現')+'を記録しました。'+nextLabel(result)+'。';$('#wordReviewResult').textContent=message;$('#wordReviewResult').focus();notice(message);
+  });
+ };
+ $('#wordScopeDue').onclick=()=>{wordScope='due';render();};$('#wordScopeAll').onclick=()=>{wordScope='all';render();};$('#englishSearch').oninput=render;render();
 }
+</script>
+<script>/* Short study sets: time is an estimate, never a submission deadline. */
+(function(root){
+ 'use strict';
+ function create(engine,state,data,minutes,now=Date.now(),stats=engine.buildStats(state,now)){
+  if(![5,15,30].includes(minutes))throw Error('学習時間は5・15・30分から選んでください');
+  const values=Object.values(stats.questions).filter(x=>x.answered>0&&Number.isFinite(x.avgSeconds)&&x.avgSeconds>=5).map(x=>x.avgSeconds).sort((a,b)=>a-b);
+  const median=values.length?values[Math.floor(values.length/2)]:60;
+  // Reserve an extra minute for feedback; observed answer time is not ability.
+  const secondsPerQuestion=Math.round(Math.max(30,Math.min(240,median))+60);
+  const count=Math.max(1,Math.min(40,Math.floor(minutes*60/secondsPerQuestion)));
+  const all=engine.allQuestions.filter(q=>data.generic||state.settings.reserveM4===false||!q.id.startsWith('M4-')||stats.questions[q.id].seen);
+  const priority=(a,b)=>(stats.questions[b.id].priority||0)-(stats.questions[a.id].priority||0)||a.id.localeCompare(b.id);
+  const pools={due:[],wrong:[],unseen:[],other:[]};
+  for(const q of all){const s=stats.questions[q.id];const key=s.answered>0&&s.dueAt!=null&&s.dueAt<=now?'due':s.unresolved?'wrong':!s.seen?'unseen':'other';pools[key].push(q);}
+  for(const pool of Object.values(pools))pool.sort(priority);
+  const chosen=[],counts={due:0,wrong:0,unseen:0,other:0};
+  function take(kind,n){while(n-->0&&pools[kind].length&&chosen.length<count){chosen.push(pools[kind].shift().id);counts[kind]++;}}
+  // Mix in new material where possible without letting overdue items disappear.
+  const newCount=count>=3&&pools.unseen.length?Math.max(1,Math.floor(count*.2)):0;
+  take('due',Math.ceil((count-newCount)*.6));take('wrong',count-newCount-chosen.length);take('unseen',newCount);
+  for(const kind of ['due','wrong','unseen','other'])take(kind,count-chosen.length);
+  return {minutes,ids:chosen,counts,secondsPerQuestion,estimatedSeconds:chosen.length*secondsPerQuestion,hasTimingHistory:values.length>0};
+ }
+ root.StudyPlanner={create};
+})(typeof globalThis!=='undefined'?globalThis:this);
 </script>
 <script>/* Offline study UI. Answers always use canonical option indexes. */
 'use strict';
@@ -588,7 +659,7 @@ const datetime=v=>v?new Date(v).toLocaleString('ja-JP'):'—';
 const secs=n=>Number.isFinite(n)?`${Math.round(n)}秒`:'—';
 const LABELS={high:'自信あり',medium:'迷った',low:'勘・不明',unknown:'未記録'};
 const CAUSE_LABEL={unknown:'未分類',knowledge:'知識・概念不足',api:'API・引数の混同',reading:'コード・条件の読み違い',english:'英語表現の読み違い',boundary:'NULL・境界条件',time:'時間不足',careless:'操作・不注意'};
-const MODE={english:'英語の再挑戦',englishmock:'英語模試',exam:'模試',highwrong:'自信ありの誤答',guess:'勘で正解した問題',unanswered:'未解答の問題',mock:'模試',random:'ランダム模試',wrong:'誤答再テスト',due:'期限復習',priority:'重点復習',similar:'類題',flagged:'要復習',custom:'分野・論点練習'};
+const MODE={short:'短時間学習',english:'英語の再挑戦',englishmock:'英語模試',exam:'模試',highwrong:'自信ありの誤答',guess:'勘で正解した問題',unanswered:'未解答の問題',mock:'模試',random:'ランダム模試',wrong:'誤答再テスト',due:'期限復習',priority:'重点復習',similar:'類題',flagged:'要復習',custom:'分野・論点練習'};
 function isFlagged(id){return typeof state.settings['flag:'+id]==='boolean'?state.settings['flag:'+id]:!!qstats(id).flagged;}
 function exposureGroups(a){const groups={first:{n:0,c:0},repeat:{n:0,c:0},unknown:{n:0,c:0},unshown:{n:0,c:0}};for(const id of a.ids){const shown=Object.prototype.hasOwnProperty.call(a.shown||{},id)||Object.prototype.hasOwnProperty.call(a.answers,id);const k=!shown?'unshown':a.exposedBefore?.[id]===false?'first':a.exposedBefore?.[id]===true?'repeat':'unknown';groups[k].n++;groups[k].c+=a.answers[id]===Q[id].correct;}return groups;}
 function qlist(a){return (a.ids||[]).map(id=>Q[id]).filter(Boolean);}
@@ -600,10 +671,12 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden){tickTime()
 window.addEventListener('pagehide',()=>{tickTime();save();});
 function navigate(name){leave();view=name;document.querySelectorAll('[data-nav]').forEach(b=>b.classList.toggle('selected',b.dataset.nav===name));({home:home,study:study,analytics:analytics,history:history,drills:drills,records:records,english:englishDashboard}[name]||home)();window.scrollTo(0,0);}
 function btn(text,attrs='',primary=false){return `<button ${attrs} class="${primary?'primary':''}">${text}</button>`;}
-function home(){const stats=getStats(),qs=Object.values(stats.questions),due=E.selectQuestions(state,{kind:'due',count:999}).length,wrong=E.selectQuestions(state,{kind:'wrong',count:999}).length;app.innerHTML=`<div class="hero"><div><div class="eyebrow">TODAY'S LEARNING</div><h2>思い出す。確かめる。次につなげる。</h2><p class="muted">前回の誤答と復習時期から、今日の学習を選べます。</p></div><span class="badge">${new Set(E.allQuestions.map(q=>q.domain)).size}分野 / ${DATA.exams.reduce((n,e)=>n+e.questions.length,0)}問${DATA.variants?.length?' + 類題'+DATA.variants.length+'問':''}${DATA.additional.length?' + 追加'+DATA.additional.length+'問':''}</span></div><div class="metrics"><div><b>${due}</b><span>復習期限</span></div><div><b>${wrong}</b><span>未克服の誤答</span></div><div><b>${qs.filter(x=>x.attempts>0).length}</b><span>受験済みの問題</span></div><div><b>${qs.filter(x=>x.mastery==='mastered').length}</b><span>間隔を空けて定着確認</span></div></div><div class="toolbar">${btn('今日の復習を始める','id="todayBtn"',true)}${btn('誤答だけ再テスト','id="wrongBtn"')}${btn('学習メニュー','id="menuBtn"')}${DATA.additional.length?btn('追加問題を解く','id="additionalHomeBtn"'):''}</div>${Object.values(state.sessions).length?`<section class="card"><h3>途中のセッション</h3><div class="resume-list">${Object.entries(state.sessions).map(([k,s])=>`<div><span>${esc(s.title)} · ${Object.keys(s.answers).length}/${s.ids.length}問 · ${s.deadline&&state.settings.timeLimit!==false?'時間制限あり':'時間制限なし'}</span>${btn('続きから',`data-resume="${esc(k)}"`)}${btn('削除',`data-delete-session="${esc(k)}"`)}</div>`).join('')}</div></section>`:''}${sessionTrashPanel()}<h3 class="section-title">${DATA.generic?'問題グループ':(state.settings.timeLimit===false?'模試 · 各45問 / 時間制限OFF':'本番形式模試 · 各45問 / 90分')}</h3><div class="grid">${DATA.exams.map(e=>{const aa=state.attempts.filter(a=>a.exam===e.id||a.key===e.id);return `<section class="card"><div class="eyebrow">${e.id}</div><h3>${esc(e.title)}</h3><p class="small muted">${e.questions.length}問 / ${state.sessions[e.id]?(state.sessions[e.id].deadline&&state.settings.timeLimit!==false?'時間制限あり（中断中も進みます）':'時間制限なし'):state.settings.timeLimit===false||e.minutes===0?'時間制限なし':(e.minutes??90)+'分'}</p><p class="muted">${aa.length?`${aa.length}回実施 / 直近 ${pct(aa.at(-1).correct,aa.at(-1).total||45)}`:'未実施'}</p>${btn(state.sessions[e.id]?'続きから':'開始する',`data-start="${e.id}"`,true)}</section>`}).join('')}</div><section class="card settings"><h3>出題の設定</h3><label><input type="checkbox" id="timeLimit" ${state.settings.timeLimit!==false?'checked':''}> 時間制限をONにする（模試・制限時間のある問題グループ）</label><p class="small muted">OFFでは時間切れにならず、中断後も続きから再開できます。OFFで再開すると途中の演習の制限も解除します。ONに戻すと、新しく始める演習から制限時間が付きます。</p><label><input type="checkbox" id="immediateFeedback" ${state.settings.immediateFeedback!==false?'checked':''}> 回答直後に正解・解説を表示</label><label><input type="checkbox" id="shuffleQ" ${state.settings.shuffleQuestions!==false?'checked':''}> 問題順を毎回シャッフル</label><label><input type="checkbox" id="shuffleO" ${state.settings.shuffleOptions!==false?'checked':''}> 選択肢を毎回シャッフル</label><label ${DATA.generic?'class="hidden"':''}><input type="checkbox" id="reserveM4" ${state.settings.reserveM4!==false?'checked':''}> 模試4を通常の復習・ランダム抽出から取り置く</label><p class="small muted">設定は新しく始める演習に適用します。即時解説では最初の回答を記録します。回答ごとに成績へ反映し、提出時に二重計上しません。途中再開時は同じ順番を維持します。${DATA.generic?'問題IDは追加したJSONと共通です。':'問題IDは冊子と共通です。取り置いていても模試4そのものは開始できます。'}</p></section><div class="notice">${DATA.generic?esc(DATA.description||'追加した教材です。問題・解説の内容は作成元で確認してください。'):'共通前提：PySpark 3.5.x、必要な関数・型はimport済み、ANSI=false・UTC。Spark上での全コード実行検証は未実施です。'} 学習指標は合格判定ではありません。</div>`;
+function home(){const stats=getStats(),qs=Object.values(stats.questions),due=E.selectQuestions(state,{kind:'due',count:999}).length,wrong=E.selectQuestions(state,{kind:'wrong',count:999}).length;app.innerHTML=`<div class="hero"><div><div class="eyebrow">TODAY'S LEARNING</div><h2>思い出す。確かめる。次につなげる。</h2><p class="muted">前回の誤答と復習時期から、今日の学習を選べます。</p></div><span class="badge">${new Set(E.allQuestions.map(q=>q.domain)).size}分野 / ${DATA.exams.reduce((n,e)=>n+e.questions.length,0)}問${DATA.variants?.length?' + 類題'+DATA.variants.length+'問':''}${DATA.additional.length?' + 追加'+DATA.additional.length+'問':''}</span></div><div class="metrics"><div><b>${due}</b><span>復習期限</span></div><div><b>${wrong}</b><span>未克服の誤答</span></div><div><b>${qs.filter(x=>x.attempts>0).length}</b><span>受験済みの問題</span></div><div><b>${qs.filter(x=>x.mastery==='mastered').length}</b><span>間隔を空けて定着確認</span></div></div><div class="toolbar">${btn('今日の復習を始める','id="todayBtn"',true)}${btn('誤答だけ再テスト','id="wrongBtn"')}${btn('学習メニュー','id="menuBtn"')}${DATA.additional.length?btn('追加問題を解く','id="additionalHomeBtn"'):''}</div>${Object.values(state.sessions).length?`<section class="card"><h3>途中のセッション</h3><div class="resume-list">${Object.entries(state.sessions).map(([k,s])=>`<div><span>${esc(s.title)} · ${Object.keys(s.answers).length}/${s.ids.length}問 · ${s.deadline&&state.settings.timeLimit!==false?'時間制限あり':'時間制限なし'}</span>${btn('続きから',`data-resume="${esc(k)}"`)}${btn('削除',`data-delete-session="${esc(k)}"`)}</div>`).join('')}</div></section>`:''}${sessionTrashPanel()}${timeStudyPanel()}<h3 class="section-title">${DATA.generic?'問題グループ':(state.settings.timeLimit===false?'模試 · 各45問 / 時間制限OFF':'本番形式模試 · 各45問 / 90分')}</h3><div class="grid">${DATA.exams.map(e=>{const aa=state.attempts.filter(a=>a.exam===e.id||a.key===e.id);return `<section class="card"><div class="eyebrow">${e.id}</div><h3>${esc(e.title)}</h3><p class="small muted">${e.questions.length}問 / ${state.sessions[e.id]?(state.sessions[e.id].deadline&&state.settings.timeLimit!==false?'時間制限あり（中断中も進みます）':'時間制限なし'):state.settings.timeLimit===false||e.minutes===0?'時間制限なし':(e.minutes??90)+'分'}</p><p class="muted">${aa.length?`${aa.length}回実施 / 直近 ${pct(aa.at(-1).correct,aa.at(-1).total||45)}`:'未実施'}</p>${btn(state.sessions[e.id]?'続きから':'開始する',`data-start="${e.id}"`,true)}</section>`}).join('')}</div><section class="card settings"><h3>出題の設定</h3><label><input type="checkbox" id="timeLimit" ${state.settings.timeLimit!==false?'checked':''}> 時間制限をONにする（模試・制限時間のある問題グループ）</label><p class="small muted">OFFでは時間切れにならず、中断後も続きから再開できます。OFFで再開すると途中の演習の制限も解除します。ONに戻すと、新しく始める演習から制限時間が付きます。</p><label><input type="checkbox" id="immediateFeedback" ${state.settings.immediateFeedback!==false?'checked':''}> 回答直後に正解・解説を表示</label><label><input type="checkbox" id="shuffleQ" ${state.settings.shuffleQuestions!==false?'checked':''}> 問題順を毎回シャッフル</label><label><input type="checkbox" id="shuffleO" ${state.settings.shuffleOptions!==false?'checked':''}> 選択肢を毎回シャッフル</label><label ${DATA.generic?'class="hidden"':''}><input type="checkbox" id="reserveM4" ${state.settings.reserveM4!==false?'checked':''}> 模試4を通常の復習・ランダム抽出から取り置く</label><p class="small muted">設定は新しく始める演習に適用します。即時解説では最初の回答を記録します。回答ごとに成績へ反映し、提出時に二重計上しません。途中再開時は同じ順番を維持します。${DATA.generic?'問題IDは追加したJSONと共通です。':'問題IDは冊子と共通です。取り置いていても模試4そのものは開始できます。'}</p></section><div class="notice">${DATA.generic?esc(DATA.description||'追加した教材です。問題・解説の内容は作成元で確認してください。'):'共通前提：PySpark 3.5.x、必要な関数・型はimport済み、ANSI=false・UTC。Spark上での全コード実行検証は未実施です。'} 学習指標は合格判定ではありません。</div>`;
 $('#todayBtn').onclick=()=>startSelection(due?'due':'priority',20);$('#wrongBtn').onclick=()=>startSelection('wrong',20);$('#menuBtn').onclick=()=>navigate('study');if($('#additionalHomeBtn'))$('#additionalHomeBtn').onclick=()=>startAdditional();
-app.querySelectorAll('[data-start]').forEach(b=>b.onclick=()=>startMock(b.dataset.start));bindResume();
+app.querySelectorAll('[data-start]').forEach(b=>b.onclick=()=>startMock(b.dataset.start));bindResume();bindTimeStudy();
 for(const [id,key]of [['timeLimit','timeLimit'],['immediateFeedback','immediateFeedback'],['shuffleQ','shuffleQuestions'],['shuffleO','shuffleOptions'],['reserveM4','reserveM4']])$('#'+id).onchange=e=>{state.settings[key]=e.target.checked;save();if(key==='timeLimit')home();};}
+function timeStudyPanel(){const stats=getStats();return `<section class="card"><h3>今日使える時間で始める</h3><p class="small muted">復習期限・苦手・未見問題を組み合わせます。時間は解説を読む時間も含めた目安です。時間切れの自動提出はありません。</p><div class="time-study-grid">${[5,15,30].map(minutes=>{const plan=StudyPlanner.create(E,state,DATA,minutes,Date.now(),stats);return `<div><b>${minutes}分コース</b><p class="small">目安 ${plan.ids.length}問<br>期限復習 ${plan.counts.due} / 苦手 ${plan.counts.wrong} / 未見 ${plan.counts.unseen}${plan.counts.other?' / その他 '+plan.counts.other:''}</p>${btn('始める',`data-time-study="${minutes}" aria-label="${minutes}分コースを始める" ${plan.ids.length?'':'disabled'}`,true)}</div>`;}).join('')}</div><p class="small muted">回答時間の履歴があれば問題数に反映します。解説時間は1問あたり1分を仮定しています。いつでも中断・再開できます。</p></section>`;}
+function bindTimeStudy(){app.querySelectorAll('[data-time-study]').forEach(b=>b.onclick=()=>{const plan=StudyPlanner.create(E,state,DATA,Number(b.dataset.timeStudy));begin({key:'short-'+(crypto.randomUUID?.()||Date.now()),mode:'short',title:plan.minutes+'分学習（目安）',ids:plan.ids,minutes:0});});}
 function sessionTrashPanel(){const entries=Object.entries(state.sessionTrash||{});return entries.length?`<details class="card"><summary>削除したセッション（${entries.length}件）</summary><p class="small muted">削除した途中の回答は成績集計から除外されます。復元すると回答・選択肢順・表示位置も戻ります。</p>${entries.map(([id,s])=>`<div class="history-row"><span>${esc(s.title)} · ${Object.keys(s.answers).length}/${s.ids.length}問</span>${btn('復元',`data-restore-session="${esc(id)}"`)}</div>`).join('')}</details>`:'';}
 function bindResume(){
  app.querySelectorAll('[data-resume]').forEach(b=>b.onclick=()=>resume(b.dataset.resume));
@@ -616,8 +689,8 @@ function begin(config){if(!config.ids.length){notice('条件に合う問題は�
 function resume(key){leave();if(!state.sessions[key])return;activeKey=key;view='session';notice('');const s=state.sessions[key];if(state.settings.timeLimit===false&&s.deadline){s.deadline=null;save();}if(s.deadline&&s.deadline<=Date.now()){submit(true);return;}renderQuestion();clockTick();}
 function startSelection(kind,count,filter={}){state.settings.reserveM4??=!DATA.generic;const extra=['highwrong','guess','unanswered'].includes(kind),st=extra?getStats():null;let all=E.selectQuestions(state,{kind:extra?'priority':kind,count:999,...filter});if(extra)all=all.filter(id=>{const x=st.questions[id];return kind==='highwrong'?x.highConfidenceWrong>0&&x.unresolved:kind==='guess'?x.guessCorrect>0&&x.mastery!=='mastered':x.unanswered>0&&x.answered===0;});const ids=allowedIds(all,kind).slice(0,count);const key=`${kind}-${crypto.randomUUID?.()||Date.now()}`;begin({key,mode:kind,title:MODE[kind]||'学習',ids,minutes:kind==='random'?90:0,recallFirst:!!filter.recallFirst});}
 function startAdditional(){const ids=DATA.additional.filter(q=>(!$('#studyDomain')||!$('#studyDomain').value||q.domain===$('#studyDomain').value)&&(!$('#studyConcept')||!$('#studyConcept').value||q.concept===$('#studyConcept').value)).map(q=>q.id);begin({key:'additional-'+Date.now(),mode:'custom',title:'追加問題',ids,recallFirst:!!$('#recallFirst')?.checked});}
-function study(){const concepts=[...new Map(E.allQuestions.map(q=>[q.concept||q.domain,{id:q.concept||q.domain,label:q.concept_label||q.domain}])).values()];app.innerHTML=`<h2>復習・ランダム演習</h2><section class="card"><div class="formgrid"><label>分野<select id="studyDomain"><option value="">すべて</option>${DATA.exams.flatMap(e=>e.questions).map(q=>q.domain).filter((d,i,a)=>a.indexOf(d)===i).map(d=>`<option>${esc(d)}</option>`).join('')}</select></label><label>論点<select id="studyConcept"><option value="">すべて</option>${concepts.map(c=>`<option value="${esc(c.id)}">${esc(c.label)}</option>`).join('')}</select></label><label>問題数<select id="studyCount"><option>10</option><option selected>20</option><option>45</option><option value="999">該当する全問</option></select></label></div><p><label><input id="recallFirst" type="checkbox"> 選択肢を見る前に、自分の答えを書く</label></p><div class="toolbar">${[['due','期限が来た問題'],['wrong','未克服の誤答'],['priority','弱点を優先'],['flagged','要復習マーク'],['highwrong','自信ありの誤答'],['guess','勘で正解した問題'],['unanswered','未解答の問題']].map(([k,t])=>btn(t,`data-practice="${k}"`,k==='priority')).join('')}</div><p class="muted small">誤答は選択して間違えた問題です。未解答は別集計し、弱点優先の対象に含めます。条件に合う数だけ出題します。同じ日に正解しても未克服の誤答に残し、20時間以上空けた正解で克服を確認します。</p></section><section class="card"><h3>ランダム模試 · 最大45問 / ${state.settings.timeLimit===false?'時間制限なし':'90分'}</h3><p>${DATA.generic?'登録した問題グループから最大45問をランダムに出題します。':'元の180問から公式領域配分に沿って抽出します。類題と追加問題はこの抽出に混ぜません。'} 既出問題は初見として集計しません。</p>${btn('ランダム模試を開始','id="randomBtn"',true)}${DATA.additional.length?btn('追加問題を解く（'+DATA.additional.length+'問）','id="additionalBtn"'):''}<p class="muted small">上の分野・論点・問題数指定はランダム模試には適用しません。</p></section>`;
-if($('#additionalBtn'))$('#additionalBtn').onclick=()=>startAdditional();app.querySelectorAll('[data-practice]').forEach(b=>b.onclick=()=>startSelection(b.dataset.practice,Number($('#studyCount').value),{domain:$('#studyDomain').value||undefined,concept:$('#studyConcept').value||undefined,recallFirst:$('#recallFirst').checked}));$('#randomBtn').onclick=()=>{const ids=E.selectQuestions(state,{kind:'random',count:45,reserveM4:state.settings.reserveM4!==false});begin({key:`random-${Date.now()}`,mode:'random',title:'ランダム模試',ids,minutes:90});};}
+function study(){const concepts=[...new Map(E.allQuestions.map(q=>[q.concept||q.domain,{id:q.concept||q.domain,label:q.concept_label||q.domain}])).values()];app.innerHTML=`<h2>復習・ランダム演習</h2>${timeStudyPanel()}<section class="card"><div class="formgrid"><label>分野<select id="studyDomain"><option value="">すべて</option>${DATA.exams.flatMap(e=>e.questions).map(q=>q.domain).filter((d,i,a)=>a.indexOf(d)===i).map(d=>`<option>${esc(d)}</option>`).join('')}</select></label><label>論点<select id="studyConcept"><option value="">すべて</option>${concepts.map(c=>`<option value="${esc(c.id)}">${esc(c.label)}</option>`).join('')}</select></label><label>問題数<select id="studyCount"><option>10</option><option selected>20</option><option>45</option><option value="999">該当する全問</option></select></label></div><p><label><input id="recallFirst" type="checkbox"> 選択肢を見る前に、自分の答えを書く</label></p><div class="toolbar">${[['due','期限が来た問題'],['wrong','未克服の誤答'],['priority','弱点を優先'],['flagged','要復習マーク'],['highwrong','自信ありの誤答'],['guess','勘で正解した問題'],['unanswered','未解答の問題']].map(([k,t])=>btn(t,`data-practice="${k}"`,k==='priority')).join('')}</div><p class="muted small">誤答は選択して間違えた問題です。未解答は別集計し、弱点優先の対象に含めます。条件に合う数だけ出題します。同じ日に正解しても未克服の誤答に残し、20時間以上空けた正解で克服を確認します。</p></section><section class="card"><h3>ランダム模試 · 最大45問 / ${state.settings.timeLimit===false?'時間制限なし':'90分'}</h3><p>${DATA.generic?'登録した問題グループから最大45問をランダムに出題します。':'元の180問から公式領域配分に沿って抽出します。類題と追加問題はこの抽出に混ぜません。'} 既出問題は初見として集計しません。</p>${btn('ランダム模試を開始','id="randomBtn"',true)}${DATA.additional.length?btn('追加問題を解く（'+DATA.additional.length+'問）','id="additionalBtn"'):''}<p class="muted small">上の分野・論点・問題数指定はランダム模試には適用しません。</p></section>`;
+bindTimeStudy();if($('#additionalBtn'))$('#additionalBtn').onclick=()=>startAdditional();app.querySelectorAll('[data-practice]').forEach(b=>b.onclick=()=>startSelection(b.dataset.practice,Number($('#studyCount').value),{domain:$('#studyDomain').value||undefined,concept:$('#studyConcept').value||undefined,recallFirst:$('#recallFirst').checked}));$('#randomBtn').onclick=()=>{const ids=E.selectQuestions(state,{kind:'random',count:45,reserveM4:state.settings.reserveM4!==false});begin({key:`random-${Date.now()}`,mode:'random',title:'ランダム模試',ids,minutes:90});};}
 function sourceLink(url){return url?`<a href="${esc(url)}" target="_blank" rel="noopener">${DATA.generic?'参考資料':'公式資料'} ↗</a>`:'';}
 function translationPanel(q,order,answer){return englishPanel(q,order,answer);}
 function instantFeedback(s,q,order){
@@ -686,6 +759,102 @@ refreshBankList();updateBankHeading();
 
 document.querySelector('#libraryRestore').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{if(f.size>20*1024*1024)throw Error('上限20MBです');const raw=JSON.parse(await f.text()),incoming=raw.local||raw;const result=StudyLibrary.merge(null,StudyLibrary.snapshot(),incoming);localStorage.setItem('study-sync-backup',JSON.stringify({local:StudyLibrary.snapshot(),remote:incoming,at:new Date().toISOString()}));StudyLibrary.accept(result.value);state=StudyLibrary.state;activeKey=null;timing=null;switchBank(StudyLibrary.active);document.querySelector('#bankMessage').textContent='問題集と記録を統合しました。';}catch(err){document.querySelector('#bankMessage').textContent='復元できません：'+err.message;}e.target.value='';};
 
+</script>
+<script>/* Device-only reading preferences. This module never reads or writes study records. */
+(function(){
+  'use strict';
+  const app=document.querySelector('#app');
+  if(!app||document.querySelector('#studyDisplayControls'))return;
+  const key='study-display-v1';
+  const defaults={focus:false,size:0,line:0,width:0};
+  function clean(raw){
+    const p=raw&&typeof raw==='object'?raw:{};
+    return {focus:p.focus===true,size:[0,18,20,22].includes(p.size)?p.size:0,line:[0,1.85,2.05,2.25].includes(p.line)?p.line:0,width:[0,760,960].includes(p.width)?p.width:0};
+  }
+  let prefs={...defaults};
+  try{prefs=clean(JSON.parse(localStorage.getItem(key)||'null'));}catch{}
+  const css=document.createElement('style');
+  css.id='studyDisplayStyles';
+  css.textContent=`
+    #studyDisplayControls[hidden]{display:none!important}
+    #studyDisplayControls{position:sticky;top:0;z-index:20;padding:8px 0;margin-bottom:14px;background:var(--paper);border-bottom:1px solid var(--line)}
+    .study-display-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+    #studyDisplayControls button,#studyDisplayControls summary,#studyDisplayControls select{min-height:44px;font-size:14px}
+    #studyDisplayToggle{white-space:nowrap}
+    #studyDisplayToggle[aria-pressed="true"]{background:var(--teal);color:var(--paper);font-weight:700}
+    #studyDisplayControls details{flex:1;min-width:100px}
+    #studyDisplayControls summary{display:flex;align-items:center;padding:8px 12px;border:1px solid var(--line);border-radius:7px;background:var(--surface);width:max-content;font-weight:500}
+    #studyDisplayControls summary::before{content:'▸';margin-right:6px}
+    #studyDisplayControls details[open]>summary::before{content:'▾'}
+    #studyDisplayControls .study-reading-settings{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;padding:12px 0 6px}
+    #studyDisplayControls .study-reading-settings label{display:grid;gap:4px;font-size:13px;min-width:120px;flex:1}
+    #studyDisplayControls .study-reading-settings select{width:100%;padding:8px}
+    #studyDisplayControls .study-reading-caption{margin:8px 0 0;font-size:12px;color:var(--muted)}
+    #studyDisplayAside{display:none}
+    body.study-focus #studyDisplayAside{display:inline-block}
+    body.study-focus>header,body.study-focus>.wrap>nav.toolbar,body.study-focus #bankPanel,body.study-focus #cloudPanel,body.study-focus>.wrap>footer{display:none!important}
+    body.study-focus>.wrap{padding-top:0}
+    body.study-focus #app>.main{grid-template-columns:minmax(0,1fr)}
+    body.study-focus #app>.main>aside{max-width:var(--study-reader-width,960px);width:100%;justify-self:center}
+    body.study-focus #app>.main>.question-card{max-width:var(--study-reader-width,960px);width:100%;justify-self:center}
+    body.study-custom-width #app>.main>.question-card{max-width:var(--study-reader-width);width:100%;justify-self:center}
+    body.study-custom-width.study-display-session:not(.study-focus) #app>.main{grid-template-columns:minmax(0,var(--study-reader-width)) 235px;justify-content:center}
+    body.study-custom-size #app .question-card :is(.question,.option span,.explain,.translated-stem,.translated-option-text,.bilingual,.instant-correct,.english-term p){font-size:var(--study-reader-font)!important}
+    body.study-custom-line #app .question-card :is(.question,.option span,.explain,.translated-stem,.translated-option-text,.bilingual,.instant-correct,.english-term p){line-height:var(--study-reader-line)!important}
+    body.study-display-session #app .question-card,body.study-display-session #instantFeedback,body.study-display-session #app>.main>aside{scroll-margin-top:var(--study-display-offset,120px)}
+    @media(max-width:850px){body.study-custom-width.study-display-session:not(.study-focus) #app>.main{grid-template-columns:minmax(0,1fr)}}
+    @media(max-width:450px){#studyDisplayControls{margin-bottom:10px}.study-display-bar{gap:6px}#studyDisplayControls button,#studyDisplayControls summary{padding:8px 10px;font-size:13px}#studyDisplayControls .study-reading-settings{gap:8px}#studyDisplayControls .study-reading-settings label{min-width:100px}body.study-focus .question-card{padding:16px 12px}}
+    @media print{#studyDisplayControls{display:none!important}}
+  `;
+  document.head.append(css);
+  const controls=document.createElement('section');
+  controls.id='studyDisplayControls';
+  controls.setAttribute('aria-label','演習の表示設定');
+  controls.hidden=true;
+  controls.innerHTML=`<div class="study-display-bar"><button id="studyDisplayToggle" type="button" aria-pressed="false">集中表示</button><button id="studyDisplayAside" type="button">問題一覧・提出</button><details id="studyReadingDetails"><summary>文字・行間</summary><div class="study-reading-settings"><label>文字サイズ<select id="studyReadingSize"><option value="0">標準</option><option value="18">大きめ · 18px</option><option value="20">大 · 20px</option><option value="22">特大 · 22px</option></select></label><label>行間<select id="studyReadingLine"><option value="0">標準</option><option value="1.85">ゆったり · 1.85</option><option value="2.05">広め · 2.05</option><option value="2.25">さらに広め · 2.25</option></select></label><label>本文の幅<select id="studyReadingWidth"><option value="0">標準</option><option value="760">狭め · 最大760px</option><option value="960">広め · 最大960px</option></select></label><button id="studyReadingReset" type="button">表示設定を標準に</button></div><p class="study-reading-caption">この端末に保存します。スマホでは画面幅に合わせます。集中表示は上の「集中表示を解除」で戻せます。</p><p id="studyReadingSaveStatus" class="study-reading-caption" role="status"></p></details></div>`;
+  app.before(controls);
+  const toggle=controls.querySelector('#studyDisplayToggle');
+  const size=controls.querySelector('#studyReadingSize'),line=controls.querySelector('#studyReadingLine'),width=controls.querySelector('#studyReadingWidth');
+  function apply(){
+    const running=!!app.querySelector('.question-card');
+    controls.hidden=!running;
+    document.body.classList.toggle('study-display-session',running);
+    document.body.classList.toggle('study-focus',running&&prefs.focus);
+    document.body.classList.toggle('study-custom-size',running&&prefs.size!==0);
+    document.body.classList.toggle('study-custom-line',running&&prefs.line!==0);
+    document.body.classList.toggle('study-custom-width',running&&prefs.width!==0);
+    document.body.style.setProperty('--study-reader-font',(prefs.size||17)+'px');
+    document.body.style.setProperty('--study-reader-line',String(prefs.line||1.85));
+    document.body.style.setProperty('--study-reader-width',(prefs.width||960)+'px');
+    toggle.textContent=prefs.focus?'集中表示を解除':'集中表示';
+    toggle.setAttribute('aria-pressed',String(prefs.focus));
+    size.value=String(prefs.size);line.value=String(prefs.line);width.value=String(prefs.width);
+  }
+  function save(){
+    const status=controls.querySelector('#studyReadingSaveStatus');
+    try{localStorage.setItem(key,JSON.stringify(prefs));status.textContent='';}
+    catch{status.textContent='表示設定を保存できませんでした。このページを開いている間は適用されます。';}
+    apply();
+  }
+  toggle.onclick=()=>{prefs.focus=!prefs.focus;save();};
+  size.onchange=()=>{prefs.size=Number(size.value);save();};
+  line.onchange=()=>{prefs.line=Number(line.value);save();};
+  width.onchange=()=>{prefs.width=Number(width.value);save();};
+  controls.querySelector('#studyReadingReset').onclick=()=>{prefs={...defaults};save();};
+  controls.querySelector('#studyDisplayAside').onclick=()=>{
+    const aside=app.querySelector('.main>aside');
+    if(aside){aside.setAttribute('tabindex','-1');aside.focus({preventScroll:true});aside.scrollIntoView({block:'start',behavior:'smooth'});}
+  };
+  // Only observe replacement of the app view. Timer ticks and answer-control events need no interception.
+  const observer=new MutationObserver(apply);
+  observer.observe(app,{childList:true});
+  if(typeof ResizeObserver!=='undefined'){
+    const sizeObserver=new ResizeObserver(()=>{document.body.style.setProperty('--study-display-offset',(Math.ceil(controls.getBoundingClientRect().height)+16)+'px');});
+    sizeObserver.observe(controls);
+  }
+  window.addEventListener('storage',event=>{if(event.key===key){try{prefs=clean(JSON.parse(event.newValue||'null'));apply();}catch{}}});
+  apply();
+})();
 </script>
 <script src="firebase-config.js"></script>
 <script src="firebase-storage.js"></script>
