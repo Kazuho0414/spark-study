@@ -18,7 +18,8 @@ function sessionConfig(engine,data,plan,settings,config){
  const allowed=new Set(eligible(engine,data,plan,config.allowHeld===true).map(q=>q.id));
  if(!Array.isArray(config.ids)||config.ids.some(id=>!allowed.has(id)))throw Error('出題対象外の問題が含まれています。旧問題は出題しません。');
  return {key:config.key,title:config.title,ids:[...new Set(config.ids)],
-  minutes:settings.timeLimit===false?0:config.minutes||0,
+  minutes:config.review===true||settings.timeLimit===false?0:config.minutes||0,
+  review:config.review===true,
   immediateFeedback:settings.immediateFeedback!==false,
   shuffleQuestions:settings.shuffleQuestions!==false,
   shuffleOptions:settings.shuffleOptions!==false,
@@ -43,5 +44,14 @@ function create(engine,state,data,plan,minutes,now=Date.now(),stats=engine.build
  for(const kind of ['due','wrong','unseen','other'])take(kind,count-chosen.length);
  return {minutes,ids:chosen,counts,secondsPerQuestion,estimatedSeconds:chosen.length*secondsPerQuestion,hasTimingHistory:values.length>0};
 }
-root.StudyPlanner={create,eligible,sessionConfig,restoreSettings};
+function reviewAll(engine,state,data,plan,now=Date.now(),stats=engine.buildStats(state,now)){
+ const counts={due:0,wrong:0,unseen:0};
+ const selected=eligible(engine,data,plan).filter(q=>{
+  const s=stats.questions[q.id]||{};
+  const kind=s.answered>0&&s.dueAt!=null&&s.dueAt<=now?'due':s.unresolved?'wrong':!s.seen?'unseen':null;
+  if(kind)counts[kind]++;return !!kind;
+ }).sort((a,b)=>(stats.questions[b.id]?.priority||0)-(stats.questions[a.id]?.priority||0)||a.id.localeCompare(b.id));
+ return {ids:selected.map(q=>q.id),counts};
+}
+root.StudyPlanner={create,reviewAll,eligible,sessionConfig,restoreSettings};
 })(typeof globalThis!=='undefined'?globalThis:this);

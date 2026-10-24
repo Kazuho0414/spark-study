@@ -79,11 +79,27 @@
       for(const id of Object.keys(raw))if(!a.includes(id))fail('選択肢順に範囲外の問題');
       return out;
     }
+    function cleanReview(raw,a) {
+      obj(raw,'復習キュー');
+      const allowed=new Set(a);
+      if(!Array.isArray(raw.queue)||raw.queue.length>a.length||new Set(raw.queue).size!==raw.queue.length||raw.queue.some(id=>!allowed.has(id)))fail('復習待ちの問題');
+      if(typeof raw.pending!=='boolean'||!Array.isArray(raw.events)||raw.events.length>100000)fail('復習回答の形式');
+      const seen=new Set();let last=0;
+      const events=raw.events.map(e=>{
+        obj(e,'復習回答');safeKey(e.id);
+        if(seen.has(e.id)||!allowed.has(e.questionId))fail('復習回答の識別子');seen.add(e.id);
+        const answer=answerMap({[e.questionId]:e.answer},[e.questionId])[e.questionId],at=number(e.at,'復習回答日時');
+        if(at<last||typeof e.exposedBefore!=='boolean')fail('復習回答の順序');last=at;
+        return {id:e.id,questionId:e.questionId,answer,at,timeMs:number(e.timeMs,'復習回答時間',0,365*DAY),exposedBefore:e.exposedBefore};
+      });
+      return {queue:raw.queue.slice(),pending:raw.pending,events};
+    }
     function cleanCommon(raw,a) {
       if(raw.immediateFeedback!==undefined&&typeof raw.immediateFeedback!=='boolean')fail('即時解説の設定');
       return {
         ...(raw.immediateFeedback===undefined?{}:{immediateFeedback:raw.immediateFeedback}),
         ids:a,optionOrders:cleanOrders(raw.optionOrders,a),answers:answerMap(raw.answers,a),draftAnswers:answerMap(raw.draftAnswers,a),
+        ...(raw.review===undefined?{}:{review:cleanReview(raw.review,a)}),
         ...(raw.answeredAt===undefined?{}:{answeredAt:map(raw.answeredAt,a,'回答日時',v=>number(v,'回答日時'))}),
         ...(raw.englishViewed===undefined?{}:{englishViewed:boolMap(raw.englishViewed,a,'英語補助閲覧')}),
         ...(raw.englishReading===undefined?{}:{englishReading:map(raw.englishReading,a,'英文読み取り',v=>{if(!['unknown','clear','difficult'].includes(v))fail('英文読み取りの値');return v;})}),
@@ -198,7 +214,33 @@
         pos:0,started:now,deadline:minutes?now+minutes*60000:null,recallFirst:config.recallFirst===true,immediateFeedback:config.immediateFeedback!==false};
       const priorStats=buildStats(state,now);
       for(const id of s.ids){const o=questionMap[id].options.map((_,i)=>i);s.optionOrders[id]=config.shuffleOptions===false?o:shuffle(o);s.exposedBefore[id]=!!state.exposures[id];s.flags[id]=priorStats.questions[id].flagged;}
+      if(config.review===true){if(a.some(id=>questionMap[id].grading_hold))throw new Error('採点保留の問題は復習できません');s.review={queue:s.ids.slice(),pending:false,events:[]};s.deadline=null;}
       state.sessions[key]=s;return s;
+    }
+    function enableReview(state,key) {
+      const s=state.sessions[key];if(!s)throw new Error('途中の演習がありません');if(s.review)return s;
+      if(s.ids.some(id=>questionMap[id].grading_hold))throw new Error('採点保留の問題は復習できません');
+      const events=s.ids.filter(id=>own(s.answers,id)).map(id=>({id:uid('review-answer',s.answeredAt?.[id]||s.started),questionId:id,answer:copy(s.answers[id]),at:s.answeredAt?.[id]||s.started,timeMs:s.timesMs[id]||0,exposedBefore:s.exposedBefore[id]!==false})).sort((a,b)=>a.at-b.at);
+      const remaining=s.ids.filter(id=>!isCorrect(s.answers[id],questionMap[id]));
+      const current=s.ids[s.pos],at=remaining.indexOf(current);if(at>0)remaining.unshift(...remaining.splice(at,1));
+      s.review={queue:remaining,pending:!remaining.length,events};s.deadline=null;if(remaining.length)s.pos=s.ids.indexOf(remaining[0]);return s;
+    }
+    function commitReviewAnswer(state,key,answer,now=Date.now()) {
+      const s=state.sessions[key],r=s?.review;
+      if(!r||r.pending||!r.queue.length)throw new Error('確定できる復習問題がありません');
+      const id=r.queue[0];if(s.ids[s.pos]!==id)throw new Error('復習の表示位置が一致しません');
+      const chosen=answerMap({[id]:answer},[id])[id],prior=r.events.filter(e=>e.questionId===id);
+      const at=Math.max(number(now,'復習回答日時'),r.events.at(-1)?.at||0);
+      const timeMs=Math.max(0,(s.timesMs[id]||0)-prior.reduce((sum,e)=>sum+e.timeMs,0));
+      r.events.push({id:uid('review-answer',at),questionId:id,answer:copy(chosen),at,timeMs,exposedBefore:prior.length?true:s.exposedBefore[id]!==false});
+      s.answers[id]=chosen;s.answeredAt??={};s.answeredAt[id]=at;delete s.draftAnswers[id];
+      r.queue.shift();const correct=isCorrect(chosen,questionMap[id]);if(!correct)r.queue.push(id);
+      r.pending=true;return {correct,remaining:r.queue.length,complete:!r.queue.length};
+    }
+    function advanceReview(state,key) {
+      const s=state.sessions[key],r=s?.review;if(!r||!r.pending)throw new Error('回答を確定してから次へ進んでください');
+      if(!r.queue.length)return false;
+      r.pending=false;s.pos=s.ids.indexOf(r.queue[0]);delete s.draftAnswers[r.queue[0]];if(own(s.shown,r.queue[0]))markReviewed(state,r.queue[0]);return true;
     }
     function markShown(state,s,id,now=Date.now()) {
       if(!s.ids.includes(id))throw new Error('演習にない問題です');
@@ -219,6 +261,7 @@
     }
     function finish(state,key,auto=false,now=Date.now()) {
       const s=state.sessions[key];if(!s)throw new Error('途中の演習がありません');
+      if(s.review&&(s.review.queue.length||!s.review.pending))throw new Error('復習待ちの問題が残っています。中断して後から続けられます。');
       const common=cleanCommon(s,s.ids),a={...copy(common),id:uid('attempt',now),key:s.key,exam:own(examMap,s.key)?s.key:undefined,mode:s.mode,title:s.title,
         started:s.started,date:new Date(now).toISOString(),correct:s.ids.filter(id=>isCorrect(s.answers[id],questionMap[id])).length,total:s.ids.length,
         auto:!!auto,elapsedSeconds:Math.max(0,Math.round((Math.min(now,s.deadline||now)-s.started)/1000)),recallFirst:s.recallFirst===true,legacy:false};
@@ -236,7 +279,7 @@
           correct:answered.filter(id=>isCorrect(s.answers[id],questionMap[id])).length,
           date:new Date(Math.max(s.started,...answered.map(id=>s.answeredAt?.[id]||s.started))).toISOString(),partial:true});
       }
-      return records;
+      return records.flatMap(a=>!a.review?[a]:a.review.events.map(e=>({...a,review:undefined,id:e.id,ids:[e.questionId],answers:{[e.questionId]:e.answer},answeredAt:{[e.questionId]:e.at},timesMs:{[e.questionId]:e.timeMs},exposedBefore:{[e.questionId]:e.exposedBefore},date:new Date(e.at).toISOString(),total:1,correct:Number(isCorrect(e.answer,questionMap[e.questionId]))})));
     }
     function inferCause(q,index) {
       if(Array.isArray(index))return {cause:'unknown',tag:'複数選択の不一致',explanation:'選択漏れ・選び過ぎを含みます。本人のメモで確認してください。'};
@@ -359,7 +402,7 @@
       for(const [id,value] of Object.entries(b.drills))if(!own(result.drills,id))result.drills[id]=value;
       result.settings={...b.settings,...result.settings};result.sessionTrash={...b.sessionTrash,...result.sessionTrash};return normalizeState(result);
     }
-    return {isCorrect,correctIndexes,emptyState,normalizeState,newSession,markShown,markReviewed,finish,learningRecords,buildStats,selectQuestions,mergeState,allQuestions,questionMap,DOMAINS:domains,CAUSES};
+    return {isCorrect,correctIndexes,emptyState,normalizeState,newSession,enableReview,commitReviewAnswer,advanceReview,markShown,markReviewed,finish,learningRecords,buildStats,selectQuestions,mergeState,allQuestions,questionMap,DOMAINS:domains,CAUSES};
   }
   return {isCorrect,correctIndexes,makeEngine,DOMAINS,CAUSES};
 });

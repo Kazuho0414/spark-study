@@ -95,11 +95,12 @@ function mergeStates(engine,bs,ls,rs,conflicts){
    // A completed session must not be resurrected by an idle device.
    const finished=s=>s&&merged.attempts.some(t=>(t.key===s.key||t.key==='conflict-'+s.id)&&t.started===s.started);
    if(!a||!z){const s=a||z;if(!finished(s))merged.sessions[k]=clone(s);continue;}
-   const clashes=Object.keys(a.answers).some(id=>z.answers[id]!==undefined&&!equal(a.answers[id],z.answers[id]));
+   const reviewClash=(a.review||z.review)&&!equal(a.review,z.review)&&!equal(a.review,old?.review)&&!equal(z.review,old?.review);
+   const clashes=reviewClash||Object.keys(a.answers).some(id=>z.answers[id]!==undefined&&!equal(a.answers[id],z.answers[id]));
    if(a.id!==z.id||clashes){
     merged.sessions[k]=clone(a);
     const fork='conflict-'+z.id;
-    if(!finished(z)&&!Object.values(merged.sessions).some(s=>s.id===z.id&&equal(s.answers,z.answers))){merged.sessions[fork]={...clone(z),key:fork,title:z.title+'（別端末の続き）'};conflicts.count++;}
+    if(!finished(z)&&!Object.values(merged.sessions).some(s=>s.id===z.id&&equal(s.answers,z.answers)&&equal(s.review,z.review))){merged.sessions[fork]={...clone(z),key:fork,title:z.title+'（別端末の続き）'};conflicts.count++;}
    }else{const s=mergeValue(old,a,z,conflicts);for(const id of Object.keys(s.timesMs))s.timesMs[id]=Math.max(a.timesMs[id]||0,z.timesMs[id]||0);if(!finished(s))merged.sessions[k]=clone(s);}
   }
   return engine.normalizeState(merged);
