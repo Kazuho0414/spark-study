@@ -37,8 +37,15 @@ function needsMigration(raw){return !!(mock5&&raw?.schema==='study-library-v1'&&
 function backupBeforeMigration(raw,source){
  if(needsMigration(raw)&&!localStorage.getItem(MIGRATION_BACKUP+source))localStorage.setItem(MIGRATION_BACKUP+source,JSON.stringify(raw));
  const previous=raw?.banks?.[root.EXAM4_BANK.id];
- const key='study-abcd-before-20261025:'+source;
- if(previous&&(previous.data?.edition||0)<(root.EXAM4_BANK.edition||0)&&!localStorage.getItem(key))localStorage.setItem(key,JSON.stringify(raw));
+ const key='study-147-before-20261025:'+source;
+ if(previous&&(previous.data?.edition||0)<(root.EXAM4_BANK.edition||0)&&!localStorage.getItem(key)){
+  try{localStorage.setItem(key,JSON.stringify(raw));}
+  catch{
+   // Keep every state field; bundled question bodies already remain in the published edition.
+   const compact={...raw,banks:Object.fromEntries(Object.entries(raw.banks).map(([id,b])=>[id,{...b,data:id==='spark'||id===root.EXAM4_BANK.id?undefined:b.data}])),backup_note:'Bundled question bodies omitted to fit storage; every saved state field is retained.'};
+   try{localStorage.setItem(key,JSON.stringify(compact));}catch{/* The original saved library remains untouched; backup space must not hide its history. */}
+  }
+ }
 }
 function migrationBackups(){const out={};for(const source of ['local','cloud','import']){const value=localStorage.getItem(MIGRATION_BACKUP+source);if(value)out[source]=JSON.parse(value);}return out;}
 function data(id,entry){
