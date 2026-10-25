@@ -50,7 +50,7 @@ function reviewAll(engine,state,data,plan,now=Date.now(),stats=engine.buildStats
  const counts={due:0,wrong:0,unseen:0};
  const selected=eligible(engine,data,plan).filter(q=>{
   const s=stats.questions[q.id]||{};
-  const kind=s.answered>0&&s.dueAt!=null&&s.dueAt<=now?'due':s.unresolved?'wrong':!s.seen?'unseen':null;
+  const kind=s.answered>0&&s.dueAt!=null&&s.dueAt<=now?'due':s.answered>0&&s.unresolved?'wrong':null;
   if(kind)counts[kind]++;return !!kind;
  }).sort((a,b)=>(stats.questions[b.id]?.priority||0)-(stats.questions[a.id]?.priority||0)||a.id.localeCompare(b.id));
  return {ids:selected.map(q=>q.id),counts};

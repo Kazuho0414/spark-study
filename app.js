@@ -35,7 +35,7 @@ function originalIds(){return PLAN.retained_question_ids||PLAN.source_question_i
 function ensureSettings(){state.settings??={};const previous=StudyLibrary.snapshot().banks.spark?.state?.settings||{};if(StudyPlanner.restoreSettings(state.settings,previous))save();}
 function reviewStudyPanel(){
  const stats=E.buildStats(state),all=StudyPlanner.reviewAll(E,state,DATA,PLAN,Date.now(),stats),running=state.sessions[REVIEW_KEY];
- return `<section class="card"><h3>対象がなくなるまで復習</h3><p class="small muted">再編模試A〜Eの225問から、復習期限・苦手・未見問題を組み合わせます。</p><p>${running?'途中の復習：残り '+running.review.queue.length+'問':'現在の対象 '+all.ids.length+'問 · 期限復習 '+all.counts.due+' / 苦手 '+all.counts.wrong+' / 未見 '+all.counts.unseen}</p>${button(running?'続きから':'まとめて復習を始める',`data-review-all aria-label="対象がなくなるまで復習を${running?'再開':'開始'}" ${all.ids.length||running?'':'disabled'}`,true)}<p class="small muted">間違えた問題は同じセッションの後ろへ自動で戻り、正解すると今回の復習を完了します。最初の誤答と再回答はそれぞれ履歴に残ります。</p><p class="small muted">時間制限はなく、いつでも中断・再開できます。その場の正解と、後日の定着確認は分けて記録します。</p></section>`;
+ return `<section class="card"><h3>対象がなくなるまで復習</h3><p class="small muted">再編模試A〜Eの225問から、復習期限を迎えた問題と、未克服の苦手問題だけを出題します。未見問題は含みません。</p><p>${running?'途中の復習：残り '+running.review.queue.length+'問':'現在の対象 '+all.ids.length+'問 · 期限復習 '+all.counts.due+' / 苦手 '+all.counts.wrong}</p>${button(running?'続きから':'まとめて復習を始める',`data-review-all aria-label="対象がなくなるまで復習を${running?'再開':'開始'}" ${all.ids.length||running?'':'disabled'}`,true)}<p class="small muted">間違えた問題は同じセッションの後ろへ自動で戻り、正解すると今回の復習を完了します。最初の誤答と再回答はそれぞれ履歴に残ります。</p><p class="small muted">時間制限はなく、いつでも中断・再開できます。その場の正解と、後日の定着確認は分けて記録します。</p></section>`;
 }
 function home(){
  ensureSettings();view='home';
