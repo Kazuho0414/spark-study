@@ -11,11 +11,13 @@ function restoreSettings(settings,previous={}){
 }
 function eligible(engine,data,plan,allowHeld=false){
  if(data.id!==plan.bank_id)throw Error('現在の模試4以外からは出題できません。');
- const allowed=new Set(plan.new_question_ids);
+ const allowed=new Set(allowHeld?plan.new_question_ids:(plan.review_question_ids||plan.new_question_ids));
  return engine.allQuestions.filter(q=>allowed.has(q.id)&&(allowHeld||!q.grading_hold));
 }
 function sessionConfig(engine,data,plan,settings,config){
- const allowed=new Set(eligible(engine,data,plan,config.allowHeld===true).map(q=>q.id));
+ const allPublished=new Set(plan.new_question_ids);
+ const allowed=new Set(engine.allQuestions.filter(q=>allPublished.has(q.id)&&(config.allowHeld===true||!q.grading_hold)).map(q=>q.id));
+ if(data.id!==plan.bank_id)throw Error('現在の問題集以外からは出題できません。');
  if(!Array.isArray(config.ids)||config.ids.some(id=>!allowed.has(id)))throw Error('出題対象外の問題が含まれています。旧問題は出題しません。');
  return {key:config.key,title:config.title,ids:[...new Set(config.ids)],
   minutes:config.review===true||settings.timeLimit===false?0:config.minutes||0,

@@ -22,21 +22,32 @@ function validateBank(raw){
    const array=(v,fallback,name)=>{if(v===undefined)return fallback;if(!Array.isArray(v)||v.length!==options.length)throw Error(q.id+'：'+name+'の数が選択肢と一致しません');return v.map(x=>text(x,name));};
    const source=q.source_url||'';if(source&&!/^https:\/\//i.test(source))throw Error('source_urlはhttps://のURLにしてください');
    const stem=text(q.stem,'問題文'),domain=text(q.domain||'一般','分野',100),topic=text(q.topic||domain,'論点',200);
-   return {id:q.id,stem,options,correct:q.correct,...(q.correct_many?{correct_many:q.correct_many.slice()}:{}),number:q.number,source_explanation:q.source_explanation||null,source_option_explanations:q.source_option_explanations||null,references:q.references||[],images:q.images||[],source_hash:q.source_hash||null,revision:q.revision||null,grading_hold:q.grading_hold||null,domain,topic,concept:text(q.concept||topic,'論点ID',200),concept_label:topic,
+   return {id:q.id,stem,options,correct:q.correct,...(q.correct_many?{correct_many:q.correct_many.slice()}:{}),number:q.number,source_explanation:q.source_explanation||null,source_option_explanations:q.source_option_explanations||null,references:q.references||[],images:q.images||[],source_hash:q.source_hash||null,source_kind:q.source_kind==='authored'?'authored':'provided',family_id:q.family_id||q.concept||topic,decision_id:q.decision_id||q.concept||topic,content_revision:q.content_revision||null,difficulty:q.difficulty||null,revision:q.revision||null,grading_hold:q.grading_hold||null,domain,topic,concept:text(q.concept||topic,'論点ID',200),concept_label:topic,
     stem_ja:q.stem_ja===undefined?stem:text(q.stem_ja,'日本語訳'),options_ja:array(q.options_ja,options,'選択肢訳'),
     explanation_ja:text(q.explanation_ja,'解説'),distractors_ja:array(q.distractors_ja,options.map((_,i)=>i===q.correct?'正解です。':'解説を参照してください。'),'選択肢ごとの理由'),source_url:source,validation:typeof q.validation==='string'?q.validation:'追加した教材'};
   })};
  });
- return {schema_version:1,id:raw.id,title,description:typeof raw.description==='string'?raw.description.slice(0,3000):'',exams,variants:[],additional:[],drills:[],generic:true};
+ return {schema_version:1,id:raw.id,title,edition:Number.isInteger(raw.edition)?raw.edition:0,description:typeof raw.description==='string'?raw.description.slice(0,3000):'',exams,variants:[],additional:[],drills:[],generic:true};
 }
 const LEGACY_M5='spark-mock5-20261017',MIGRATION_BACKUP='study-mock1to5-backup:';
 const packaged=[...(root.STUDY_BUNDLED_BANKS||[]),root.EXAM4_BANK].filter(Boolean).map(validateBank),mock5=packaged.find(b=>b.id===LEGACY_M5);
 const builtin={...root.SPARK_QUESTION_BANK,exams:[...root.SPARK_QUESTION_BANK.exams,...(mock5?mock5.exams.filter(e=>!root.SPARK_QUESTION_BANK.exams.some(x=>x.id===e.id)).map(e=>({...e,title:'本番形式模試 5'})):[]),...(root.SPARK_PRIORITY_EXAMS||[])],additional:root.SPARK_ADDITIONAL_QUESTIONS.questions};
 const bundled=packaged.filter(b=>b.id!==LEGACY_M5);
 function needsMigration(raw){return !!(mock5&&raw?.schema==='study-library-v1'&&raw.banks?.[LEGACY_M5]);}
-function backupBeforeMigration(raw,source){if(needsMigration(raw)&&!localStorage.getItem(MIGRATION_BACKUP+source))localStorage.setItem(MIGRATION_BACKUP+source,JSON.stringify(raw));}
+function backupBeforeMigration(raw,source){
+ if(needsMigration(raw)&&!localStorage.getItem(MIGRATION_BACKUP+source))localStorage.setItem(MIGRATION_BACKUP+source,JSON.stringify(raw));
+ const previous=raw?.banks?.[root.EXAM4_BANK.id];
+ const key='study-abcd-before-20261025:'+source;
+ if(previous&&(previous.data?.edition||0)<(root.EXAM4_BANK.edition||0)&&!localStorage.getItem(key))localStorage.setItem(key,JSON.stringify(raw));
+}
 function migrationBackups(){const out={};for(const source of ['local','cloud','import']){const value=localStorage.getItem(MIGRATION_BACKUP+source);if(value)out[source]=JSON.parse(value);}return out;}
-function data(id,entry){return id==='spark'?builtin:validateBank(entry.data);}
+function data(id,entry){
+ if(id==='spark')return builtin;
+ const current=packaged.find(bank=>bank.id===id);
+ // The published edition extends stable IDs; normalizing old local/cloud copies must load it.
+ const raw=id===root.EXAM4_BANK.id&&current&&(current.edition||0)>=(entry.data?.edition||0)?current:entry.data;
+ return validateBank(raw);
+}
 function normalize(raw){
  if(raw?.schema==='study-bank-record-v1'){const id=raw.bankId,known=id==='spark'?null:packaged.find(b=>b.id===id);if(id!=='spark'&&!known)throw Error('この問題集の教材がありません：'+id);raw={schema:'study-library-v1',banks:{[id]:{data:known,state:raw.state}}};}
  if(raw?.schema!=='study-library-v1')raw={schema:'study-library-v1',banks:{spark:{data:null,state:raw}}};
@@ -59,7 +70,7 @@ function normalize(raw){
  return out;
 }
 let library,error='';
-try{const old=localStorage.getItem(KEY),raw=JSON.parse(old||localStorage.getItem('spark-study-v2')||localStorage.getItem('spark-study-v1')||JSON.stringify(LearningEngine.makeEngine(builtin).emptyState()));library=normalize(raw);backupBeforeMigration(raw,'local');}catch(e){error=e.message;library=normalize(LearningEngine.makeEngine(builtin).emptyState());}
+try{const old=localStorage.getItem(KEY),raw=JSON.parse(old||localStorage.getItem('spark-study-v2')||localStorage.getItem('spark-study-v1')||JSON.stringify(LearningEngine.makeEngine(builtin).emptyState()));backupBeforeMigration(raw,'local');library=normalize(raw);}catch(e){error=e.message;library=normalize(LearningEngine.makeEngine(builtin).emptyState());}
 let active=localStorage.getItem('study-active-bank')||'spark';
 const newDefault=root.EXAM4_BANK.id;
 if(!localStorage.getItem('study-exam4-default-20261025')){try{const original=localStorage.getItem(KEY)||localStorage.getItem('spark-study-v2')||localStorage.getItem('spark-study-v1');if(original&&!localStorage.getItem('study-exam4-before-20261025'))localStorage.setItem('study-exam4-before-20261025',original);localStorage.setItem('study-active-bank',newDefault);localStorage.setItem('study-exam4-default-20261025','1');active=newDefault;}catch(e){error='移行前バックアップを保存できません: '+e.message;}}
