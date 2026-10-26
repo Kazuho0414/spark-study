@@ -1,12 +1,12 @@
 /* Japanese study feedback. Stable question IDs; option arrays use canonical order. */
 const SPARK_FEEDBACK_JA = {
   "PASTED-SPARK-20261024-001": {
-    "stem": "複数のDataFrame変換とアクションを実行するアプリで、SparkSessionの管理による無駄を減らしたい。最適な管理方法はどれか。",
+    "stem": "開発者が、複数のDataFrame変換とアクションを実行するSparkアプリケーションを作成しています。アプリケーションの実行中にSparkSessionを効率よく管理し、最適なパフォーマンスを確保したいと考えています。\n\nこのSparkアプリケーション内でSparkSessionを管理する最適な方法はどれですか。",
     "options": [
-      "各アクション後に停止して再作成する",
-      "SparkSessionを使わずSparkContextだけに頼る",
-      "変換のたびに新しいSparkSessionを作る",
-      "1つのSparkSessionをアプリ全体で再利用する"
+      "各アクションを実行するたびにSparkSessionを停止し、新しいSparkSessionを開始する。",
+      "SparkSessionを使用せず、SparkContextだけに依存する。",
+      "変換を実行する前に、毎回新しいSparkSessionを生成する。",
+      "SparkSessionを1つ作成し、アプリケーション全体を通して再利用する。"
     ],
     "explanation": "セッションは処理の入口です。通常はアプリ内で再利用し、変換やアクションのたびに作り直しません。試験では「再利用」と「処理のたびに再作成」を区別します。",
     "reasons": [
@@ -17,12 +17,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-002": {
-    "stem": "num_dfには0〜4のnum列があり、cubefunc(val)はvalの3乗を返す。このPython関数をSpark SQLのUDFとして登録し、num_dfへ適用するコードはどれか。",
+    "stem": "データエンジニアが、次のように定義されたnum_dfというDataFrameを扱っています。\n\n```\nnum_df = spark.range(5).toDF(\"num\")\n```\n\nさらに、次のPython UDFを定義しています。\n\n```\ndef cubefunc(val):\n \n    return val ** 3\n```\n\nこの関数をSpark SQLのUDFとして正しく登録し、DataFrame num_dfへ適用するコードはどれですか。",
     "options": [
-      "IntegerTypeでcubeudfをSQL登録し、selectExprで呼ぶ",
-      "udf(cubefunc)を作り、selectのColumn式で呼ぶ",
-      "DoubleTypeでSQL登録し、selectExprで呼ぶ",
-      "Python変数cubeudfを作るだけでselectExprから呼ぶ"
+      "spark.udf.register(\"cubeudf\", cubefunc, IntegerType())\nnum_df.selectExpr(\"cubeudf(num)\")",
+      "cubeudf = udf(cubefunc)\nnum_df.select(cubeudf(col(\"num\")))",
+      "spark.udf.register(\"cubeudf\", cubefunc, DoubleType())\nnum_df.selectExpr(\"cubeudf(num)\")",
+      "cubeudf = udf(cubefunc)\nnum_df.selectExpr(\"cubeudf(num)\")"
     ],
     "explanation": "SQLの文字列式から関数名で呼ぶにはspark.udf.registerが必要です。この関数は整数を返すため、戻り値の宣言もIntegerTypeに合わせます。",
     "reasons": [
@@ -33,12 +33,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-003": {
-    "stem": "events_parquetのパスにあるParquetデータのスキーマを確認するコードはどれか。",
+    "stem": "events_parquetという場所に保存されたParquetデータセットのスキーマを表示するには、どのコードを使用しますか。",
     "options": [
-      "パスをテーブル名としてSQLで読みprintSchemaする",
-      "parquet.の後にパスをバッククォートで囲んで読みprintSchemaする",
-      "パスをテーブル名として読みshowする",
-      "Parquetのパスを直接SQLで読みshowする"
+      "spark.sql(\"SELECT * FROM \" + events_parquet).printSchema()",
+      "spark.sql(\"SELECT * FROM parquet.`\" + events_parquet + \"`\").printSchema()",
+      "spark.sql(\"SELECT * FROM \" + events_parquet).show()",
+      "spark.sql(\"SELECT * FROM parquet.`\" + events_parquet + \"`\").show()"
     ],
     "explanation": "ファイルをSQLで直接参照する構文は「形式.`パス`」です。列名・型を確認するならprintSchema、データ行を見るならshowを使います。",
     "reasons": [
@@ -49,12 +49,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-004": {
-    "stem": "DataFrameをSQLから参照したい。ビューの有効範囲を現在のSparkSessionに限定し、同名ビューがすでにあっても置き換えたい。使うメソッドはどれか。",
+    "stem": "データサイエンティストがApache Sparkで大きなデータセットを扱い、DataFrameに対してSQLクエリを実行したいと考えています。データセットには機密情報が含まれるため、アクセス可能な範囲は現在のSparkセッションだけに限定する必要があります。\n\nDataFrameからSQL構文で問い合わせ可能なビューを作成し、以前に作成された同名ビューとの競合も避けるには、どのメソッドを使用しますか。",
     "options": [
-      "createTempViewで作成する",
-      "registerTempTableで登録する",
-      "createGlobalTempViewで作成する",
-      "createOrReplaceTempViewで作成する"
+      "df.createTempView(\"my_view\")",
+      "df.registerTempTable(\"my_view\")",
+      "df.createGlobalTempView(\"my_view\")",
+      "df.createOrReplaceTempView(\"my_view\")"
     ],
     "explanation": "「現在のセッションだけ」はTempView、「同名があれば置換」はOrReplaceが目印です。ただし一時ビューの有効範囲は、機密データのアクセス権設定そのものではありません。",
     "reasons": [
@@ -65,12 +65,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-005": {
-    "stem": "提示コードはdf1とbroadcast(df2)を結合し、続いてその結果とbroadcast(df3)を結合する。両方の結合キーはidである。実行結果はどうなるか。",
+    "stem": "データエンジニアが、複数のDataFrameを結合するSparkジョブを開発しています。複数の結合を行う次のコードを考えてください。\n\n```\ndata1 = [Row(id=1, value=\"A\")]\ndf1 = spark.createDataFrame(data1)\n \ndata2 = [Row(id=1, description=\"Desc1\")]\ndf2 = spark.createDataFrame(data2)\n \ndata3 = [Row(id=1, details=\"Details1\")]\ndf3 = spark.createDataFrame(data3)\n \njoined_df = df1.join(broadcast(df2), df1.id == df2.id, \"inner\") \\\n .join(broadcast(df3), df2.id == df3.id, \"inner\")\n```\n\nこのコードを実行すると、どのような結果になりますか。",
     "options": [
-      "1クエリでbroadcast joinを複数使えないため失敗する",
-      "2回目はdf1.idを使う必要があるため失敗する",
-      "正常に実行され、df2・df3を使う2回のbroadcast joinになる",
-      "broadcastは結合前に別々に実行しないとエラーになる"
+      "Sparkでは1つのクエリでブロードキャスト結合を1回しか使用できないため、コードは失敗する。",
+      "2回目の結合条件df2.id == df3.idが誤っており、df1.id == df3.idにする必要があるため、コードは失敗する。",
+      "コードは正常に実行され、最初にdf1とdf2を結合し、次にその結果とdf3を結合する、2回のブロードキャスト結合を行う。",
+      "broadcast関数の使い方が不適切なためエラーになる。結合前にdf2とdf3をそれぞれ別にブロードキャストする必要がある。"
     ],
     "explanation": "broadcast joinは複数つなげられます。最初の結果にはdf2の列参照も含まれるため、提示された2回目の結合条件を使えます。",
     "reasons": [
@@ -81,12 +81,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-006": {
-    "stem": "テキストを読み込み、不正行をfilterで除外し、特定列でgroupByした結果をテーブルへ書き込む。Sparkの実行方法を最も適切に説明するものはどれか。",
+    "stem": "データエンジニアが、大きなテキストファイルを読み、不正なレコードを除外し、特定の列を基準にグループ化するSparkジョブを実行しています。結果をテーブルへ書き込んだ後、性能を改善するためにSparkがどのようにジョブを実行したか分析したいと考えています。\n\nSparkがこれらの操作を処理する流れを最も適切に説明するものはどれですか。",
     "options": [
-      "最初に全データをメモリへ載せ、filter・groupByを実行する",
-      "filterをアクション、groupByを変換として実行する",
-      "filterとgroupByを1つの同種の変換として扱う",
-      "filterはnarrow変換、groupBy集約はshuffleを伴うwide変換になる"
+      "Sparkは最初にテキストファイル全体をメモリへ読み込み、次にフィルターを適用し、最後に指定列でグループ化する。",
+      "Sparkはテキストファイルを読み、フィルターをアクションとして実行した後、グループ化を変換として実行する。",
+      "Sparkはテキストファイルを遅延的に読み、フィルターとグループ化を1つの変換として扱い、アクションが呼ばれたときに初めて一連の処理を実行する。",
+      "Sparkはテキストファイルを遅延的に読み、フィルターを狭い依存関係の変換（narrow transformation）として適用し、次に指定列でのグループ化を、シャッフルを伴う広い依存関係の変換（wide transformation）として実行する。"
     ],
     "explanation": "filterは各パーティション内で処理できます。groupBy集約では同じキーの行を集めるため通常shuffleが必要です。計算は遅延され、書込みなどのアクションで実行します。",
     "reasons": [
@@ -97,12 +97,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-007": {
-    "stem": "EC企業が1日2TBの取引を処理し、不正検知や商品推薦に使いたい。従来のRDBではデータ量と処理速度に対応できない。最も直接役立つSparkの特徴はどれか。",
+    "stem": "大手EC企業のデータサイエンティストが、毎日2TBの顧客取引データを処理・分析する必要があります。組織は、リアルタイムの不正検知と、顧客ごとに個別化した商品推薦を実現する予定です。現在は従来のリレーショナルデータベースで処理していますが、増え続けるデータ量と処理速度の要件に対応できなくなっています。\n\nこの状況の課題を最も効果的に解決するApache Sparkの機能はどれですか。",
     "options": [
-      "小規模データを効率よく処理できること",
-      "構造化データへSQLを実行できること",
-      "メモリを活用した計算と並列処理を組み合わせられること",
-      "機械学習ライブラリが組み込まれていること"
+      "小規模なデータセットを効率よく処理できること。",
+      "構造化データセットに対するSQLクエリをサポートすること。",
+      "インメモリ計算と並列処理の機能を組み合わせられること。",
+      "機械学習ライブラリが組み込まれていること。"
     ],
     "explanation": "この問題の中心は、大量のデータを短時間で処理する能力です。Sparkは複数マシンの並列性とメモリの活用で対応します。全データが必ずメモリに収まるという意味ではありません。",
     "reasons": [
@@ -113,12 +113,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-008": {
-    "stem": "テーブルを保存するときにデータをpartitioningする主な利点は何か。",
+    "stem": "テーブルを保存または永続化するとき、データをパーティション分割する主な利点は何ですか。",
     "options": [
-      "使っていないパーティションを自動削除する",
-      "保存データを圧縮する",
-      "条件に合うパーティションだけ読み、読込み量を減らす",
-      "すべてのデータを一度にメモリへ読み込むことを保証する"
+      "使用されていないパーティションを自動削除して、ストレージ効率を改善する。",
+      "保存するデータを圧縮して、ディスク使用量を減らす。",
+      "クエリが特定のパーティション内の必要なデータ部分だけを読み取れるようにし、処理性能を改善する。",
+      "全データを一度にメモリへ読み込むことを保証して、クエリの実行を速くする。"
     ],
     "explanation": "保存時のpartitioningは、パーティション列への絞込みで不要な場所を読み飛ばすために使います。この仕組みがpartition pruningです。",
     "reasons": [
@@ -129,12 +129,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-009": {
-    "stem": "Spark Connectへの移行を検討している。採用を妨げる要件はどれか。",
+    "stem": "アプリケーションアーキテクトが、組織内で現在使っているSparkアプリケーションを刷新するため、Spark Connectの採用を検討しています。\n\n次の要件のうち、Spark Connectの採用を妨げるものはどれですか。",
     "options": [
-      "アプリのコードを対話的にデバッグできること",
-      "アプリや依存ライブラリを他アプリ・driverから分離できること",
-      "RDD APIを含む全既存コードを、変更せずそのまま移行できること",
-      "アプリとSpark driverを別々に更新できること"
+      "デバッグのしやすさ：アプリケーションコード内で直接、対話的にデバッグできること。",
+      "安定性：アプリケーションコードとその依存関係を、他のアプリケーションやSparkドライバーから分離できること。",
+      "Spark APIへの完全対応：RDD APIを含む既存のコードを、いっさい変更せずSpark Connectへ移行できること。",
+      "更新のしやすさ：Sparkドライバーとは独立してSparkアプリケーションを更新できること。"
     ],
     "explanation": "Spark Connectはクライアントとサーバーを分離しますが、従来の全APIをそのまま使える仕組みではありません。RDDやSparkContextへの直接依存は移行時の確認ポイントです。",
     "reasons": [
@@ -145,12 +145,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-010": {
-    "stem": "Sparkで割り当てられたタスクを実際に実行するコンポーネントはどれか。",
+    "stem": "Apache Sparkのアーキテクチャで、タスクが割り当てられた後、そのタスクを実行する責任を持つコンポーネントはどれですか。",
     "options": [
       "CPUコア",
-      "driverノード",
-      "workerノード",
-      "executor"
+      "ドライバーノード",
+      "ワーカーノード",
+      "エグゼキューター"
     ],
     "explanation": "役割は「driverが調整、executorが実行」です。workerはexecutorを置くマシン、CPUコアは同時実行能力であり、タスクを実行するSparkのプロセス名はexecutorです。",
     "reasons": [
@@ -161,12 +161,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-011": {
-    "stem": "au_dfにだけ1列多く、他の列名と型はnz_dfと一致する。au_df.union(nz_df)は列数の不一致で失敗した。行を縦に追加し、不足列を補って結合するにはどう変えるか。",
+    "stem": "データエンジニアが、あるテーブルの全行を別のテーブルへ追加する必要があります。しかし、最初のテーブルの1列が、2つ目のテーブルには存在しません。現在の実装を実行すると、次のエラーが発生します。\n\nAnalysisException: [NUM_COLUMNS_MISMATCH] UNIONは、列数が同じ入力に対してしか実行できません。\n\n現在の実装：\n\n`anz_df = au_df.union(nz_df)`\n\nau_dfにはnz_dfにない列が1つ余分にありますが、それ以外の列名とデータ型は一致しています。\n\nDataFrame同士を正常に結合するために、どのように変更しますか。",
     "options": [
-      "unionByName(..., allowMissingColumns=False)",
-      "unionAll(...)",
-      "unionByName(..., allowMissingColumns=True)",
-      "full_outer joinを使う"
+      "anz_df = au_df.unionByName(nz_df, allowMissingColumns=False)",
+      "anz_df = au_df.unionAll(nz_df)",
+      "anz_df = au_df.unionByName(nz_df, allowMissingColumns=True)",
+      "anz_df = au_df.join(nz_df, how='full_outer')"
     ],
     "explanation": "unionByNameは列名で対応させます。allowMissingColumns=Trueを加えると、片側にない列をNULLで補い、列数が違っても行を追加できます。",
     "reasons": [
@@ -177,12 +177,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-012": {
-    "stem": "ネットワークのheartbeat応答が遅く、正常なexecutorがlostと判断される。資源不足の警告は解消済みで、正常応答が現在のtimeoutより遅れることも確認済み。どの対応が適切か。",
+    "stem": "データエンジニアが、定期バッチ処理中に十分活用されていないSparkクラスターを分析しています。ログを確認すると、ネットワークのハートビートがタイムアウトした後、エグゼキューターが失われたものと判断されています。資源に関する警告は既に解消されており、正常なエグゼキューターの応答が現在のネットワークタイムアウトを超えて届くことも確認されています。\n\nこのクラスター利用率の問題に対処するため、どの対応を行いますか。",
     "options": [
-      "executorメモリを増やす",
-      "spark.network.timeoutを診断済みの遅延に合わせる",
-      "executorの台数を増やす",
-      "パーティションを小さくする"
+      "Sparkの設定で、エグゼキューターに割り当てるメモリを増やす。",
+      "正常なエグゼキューターが失われたと判断される前に、診断済みのネットワーク／ハートビートの遅延を許容できるよう、spark.network.timeoutを調整する。",
+      "エグゼキューターのインスタンス数を増やし、同時に処理できるタスクを増やす。",
+      "データパーティションを小さくして、タスクのスケジューリング効率を上げる。"
     ],
     "explanation": "原因がネットワーク・heartbeatの遅延と分かっているので、その待ち時間の設定を調整します。network.timeoutは、長いタスクの実行時間を一律に制限する設定ではありません。",
     "reasons": [
@@ -193,12 +193,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-013": {
-    "stem": "employees_dfにsalaryの10%であるtax列を追加し、不要なage列を削除したい。正しいコードはどれか。",
+    "stem": "データアナリストがemployees_dfというDataFrameを扱っています。salaryの10%として計算するtaxという新しい列を作り、不要になったage列を削除する必要があります。\n\ntax列を正しく追加し、age列をDataFrameから削除するコードはどれですか。",
     "options": [
-      "salary×10をwithColumnで追加し、dropFieldでageを削除する",
-      "salary×0.1をwithColumnで追加し、dropでageを削除する",
-      "lit(0.1)×salaryを追加し、dropFieldでageを削除する",
-      "salary×10を追加し、dropでageを削除する"
+      "employees_df = employees_df.withColumn(\"tax\", employees_df.salary * 10).dropField(\"age\")",
+      "employees_df = employees_df.withColumn(\"tax\", employees_df.salary * 0.1).drop(\"age\")",
+      "employees_df = employees_df.withColumn(\"tax\", lit(0.1) * col(\"salary\")).dropField(\"age\")",
+      "employees_df = employees_df.withColumn(\"tax\", employees_df.salary * 10).drop(\"age\")"
     ],
     "explanation": "10%は0.1倍です。列の追加・置換はwithColumn、DataFrameの列削除はdropを使います。計算式と削除APIを両方確認してください。",
     "reasons": [
@@ -209,12 +209,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-014": {
-    "stem": "UTCで取り込んだrawのtransaction_datetime列を、America/New_Yorkの時刻表現へ変換してレポートに使いたい。どのコードを使うか。",
+    "stem": "データエンジニアリングチームが、取引システムからデータを抽出するパイプラインを作成しました。取引システムのタイムスタンプはUTCで保存されているため、rawというDataFrameにもUTCのまま取り込んでいます。正確なレポートを作成するため、transaction_datetimeをAmerica/New_Yorkタイムゾーンへ変換する必要があります。\n\ntransaction_datetimeの変換には、どのコードを使用しますか。",
     "options": [
-      "from_utc_timestampで列とAmerica/New_Yorkを指定する",
-      "date_formatの書式としてAmerica/New_Yorkを指定する",
-      "to_utc_timestampでAmerica/New_Yorkを指定する",
-      "from_utc_timestampに列だけを渡す"
+      "raw.withColumn( \"transaction_datetime\", from_utc_timestamp (col (\"transaction_datetime\"), \"America/New_York\"), )",
+      "raw.withColumn( \"transaction_datetime\", date_format (col (\"transaction_datetime\"), \"America/New_York\") )",
+      "raw.withColumn( \"transaction_datetime\", to_utc_timestamp (col (\"transaction_datetime\"), \"America/New_York\"), )",
+      "raw.withColumn( \"transaction_datetime\", from_utc_timestamp (col (\"transaction_datetime\")), )"
     ],
     "explanation": "方向がポイントです。UTCから指定地域へはfrom_utc_timestamp、指定地域からUTCへはto_utc_timestampを使います。表示書式の変更とタイムゾーン変換も区別します。",
     "reasons": [
@@ -225,13 +225,13 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-015": {
-    "stem": "1台のメモリに収まらない大規模データを、通常の単一マシンPythonではなくSparkで処理する。Sparkが提供する利点を2つ選べ。",
+    "stem": "データサイエンティストが、1台のマシンのメモリに収まらない非常に大きなデータセットを分析しています。通常のPythonスクリプトなど、従来の単一マシン向けのプログラミング手法の代わりに、Apache Sparkの利用を検討しています。\n\nこの状況で、一般的な単一マシンのプログラミング手法に対し、Apache Sparkが提供する利点を2つ選んでください。",
     "options": [
-      "処理を自動管理するためコードを書く必要がなくなる",
-      "ノード障害から回復する耐障害性がある",
-      "ディスクだけで計算し、メモリを使わない",
-      "計算を複数マシンへ分散し、水平拡張できる",
-      "専用ハードウェアが必須で、汎用マシンを使えない"
+      "全てのデータ処理操作を自動管理するため、コードを書く必要がなくなる。",
+      "耐障害性が組み込まれており、計算中にノードが故障しても自動で復旧できる。",
+      "ディスクストレージだけからデータを処理し、メモリへの依存を最小限にする。",
+      "計算を複数マシンのクラスターへ分散し、水平方向に拡張できる。",
+      "動作には特殊なハードウェアが必要で、一般的なハードウェアのクラスターでは実行できない。"
     ],
     "explanation": "大規模データへの対応力は「複数マシンへの分散」と「障害時の再計算」です。Sparkを使うだけでコードやデータ設計が不要になるわけではありません。",
     "reasons": [
@@ -243,12 +243,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-016": {
-    "stem": "SparkのDAGは、実行の階層をどのように表すか。",
+    "stem": "Apache Sparkで、有向非巡回グラフ（DAG）は実行の階層をどのように表しますか。",
     "options": [
-      "stageやtaskを使わず、独立した複数jobだけを表す",
-      "jobを依存するstageに分け、stageを並列taskに分ける",
-      "taskをjobとし、その中に複数applicationを含める",
-      "stageやjobを考えず、最後のtaskだけを表す"
+      "複数ジョブの実行を表し、各ジョブはステージもタスクも持たず、独立して動作する。",
+      "1つのジョブを依存関係のあるステージの流れとして表し、各ステージを複数の並列タスクへ分割する。",
+      "Sparkのタスクを個別のジョブとして表し、各ジョブは複数のアプリケーションから構成される。",
+      "ステージやジョブは考慮せず、実行の最後のタスクだけを表す。"
     ],
     "explanation": "実行の基本階層はapplication → job → stage → taskです。shuffleなどがstageの境界となり、各stageではパーティションごとのtaskを実行します。",
     "reasons": [
@@ -259,12 +259,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-017": {
-    "stem": "20億行・10パーティションのdfから、user_idの近似ユニーク数とtransaction_amountの平均を、1つの集約処理で求めたい。適切なコードはどれか。",
+    "stem": "データエンジニアが、10個のSparkパーティションに分かれた20億件のレコードを持つデータセットを処理しています。user_id列に基づく一意なユーザー数の近似値と、transaction_amountの平均を求める必要があります。シャッフル操作を最小限にし、性能を改善するため、両方を1回の集約で計算しなければなりません。\n\n最適なパフォーマンスを保ちながら、この計算を正しく行うSparkコードはどれですか。",
     "options": [
-      "同じaggでapprox_count_distinctとavgを使う",
-      "同じaggでcountDistinctとavgを使う",
-      "SQLのCOUNT(DISTINCT ...)とAVGを使う",
-      "distinct().count()と平均の集約を別々に実行する"
+      "```\nfrom pyspark.sql.functions import approx_count_distinct, avg\n \ndf.agg(\n    approx_count_distinct(\"user_id\").alias(\"approx_count_distinct\"),\n    avg(\"transaction_amount\").alias(\"average_transaction\")\n).show()\n```",
+      "```\nfrom pyspark.sql.functions import countDistinct, avg\n \ndf.agg(\n    countDistinct(\"user_id\").alias(\"approx_count_distinct\"),\n    avg(\"transaction_amount\").alias(\"average_transaction\")\n).show()\n```",
+      "```\ndf.createOrReplaceTempView(\"transactions\")\n \nspark.sql(\"\"\"\nSELECT\nCOUNT(DISTINCT user_id) AS approx_count_distinct,\nAVG(transaction_amount) AS average_transaction\nFROM transactions\n\"\"\").show()\n```",
+      "```\nfrom pyspark.sql.functions import col\n \napprox_count = df.select(\"user_id\").distinct().count()\naverage_transaction = df.select(\"transaction_amount\").groupBy().avg().collect()[0][0]\n \nprint(approx_count, average_transaction)\n```"
     ],
     "explanation": "要件は「近似」と「1つの集約」です。approx_count_distinctとavgを同じaggへ渡します。列の別名にapproxと書くだけでは、厳密集計が近似にはなりません。",
     "reasons": [
@@ -275,12 +275,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-018": {
-    "stem": "df_epoch_timeのepoch_time列は、1970年1月1日UTCからの秒数を持つ。そこから月を取り出し、month列を追加するにはどのコードを使うか。",
+    "stem": "開発者が、epoch_time列を持つdf_epoch_timeというDataFrameを確認しています。この列にはUNIX epochタイムスタンプ、すなわち1970年1月1日00:00:00 UTCからの経過秒数が格納されています。このタイムスタンプから月を取り出し、monthという新しい列として追加する必要があります。\n\nこの要件を正しく満たすコードはどれですか。",
     "options": [
-      "from_unixtime後の文字列の4文字目から2文字を取る",
-      "from_unixtimeで日時にし、monthで月を取る",
-      "epoch_timeへ直接monthを適用する",
-      "epoch_timeの6文字目から2文字を取る"
+      "df_epoch_time = df_epoch_time.withColumn(\"month\", from_unixtime(\"epoch_time\").substr(4,2))",
+      "df_epoch_time = df_epoch_time.withColumn(\"month\", month(from_unixtime(\"epoch_time\")))",
+      "df_epoch_time = df_epoch_time.withColumn(\"month\", month(\"epoch_time\"))",
+      "df_epoch_time = df_epoch_time.withColumn(\"month\", col(\"epoch_time\").substr(6,2))"
     ],
     "explanation": "まずUNIX秒を日時として解釈し、それから月を抽出します。文字の位置で取り出す方法よりも、日時専用の関数を使うことが判断の要点です。",
     "reasons": [
@@ -291,12 +291,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-019": {
-    "stem": "Parquetファイルにはname列とaddress列があり、どちらもString型で保存されている。spark.read.parquetで読み込んだDataFrameのスキーマはどうなるか。",
+    "stem": "Parquetファイルにはnameとaddressという2つの列があり、どちらも文字列型で保存されています。\n\n次のコードで作成されるDataFrameのスキーマはどれですか。\n\n```\ndf = spark.read.parquet(\"path/to/file\")\n```\n\n",
     "options": [
-      "nameとaddressが、どちらもString型になる",
-      "c0というString列だけになる",
-      "NameとAddressという大文字始まりのString列になる",
-      "c0とc2というString列になる"
+      "name: String, address: String",
+      "c0: String",
+      "Name: String, Address: String",
+      "c0: String, c2: String"
     ],
     "explanation": "Parquetは列名と型をファイルに保存する形式です。読込み時にはそのスキーマが使われるため、元のname・addressがString型で復元されます。",
     "reasons": [
@@ -307,12 +307,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-020": {
-    "stem": "本番Sparkアプリで、資源消費を減らすためにHistory Serverの停止を検討している。主に何が影響を受けるか。",
+    "stem": "ある組織が本番環境でSparkアプリケーションを運用しており、資源の消費を減らすためにSpark History Serverを無効にすることを検討しています。\n\n本番環境でSpark History Serverを無効にすると、どのような影響がありますか。",
     "options": [
-      "長時間jobのdriverログが蓄積されなくなる",
-      "ログの負荷が減ってjobが速くなる",
-      "完了済みアプリの実行情報を画面で確認しにくくなる",
-      "ログサイズが減ってexecutorの実行性能が上がる"
+      "長時間動くジョブで、ドライバーログが蓄積されなくなる。",
+      "ログ記録の負担が減り、ジョブの実行速度が上がる。",
+      "過去のジョブのログを参照できなくなり、完了したジョブをデバッグする能力が制限される。",
+      "ログサイズが小さくなるため、エグゼキューターの性能が改善する。"
     ],
     "explanation": "History Serverはevent logを読み、終了したアプリの実行情報を表示します。停止で失うのはその閲覧手段であり、保存済みevent logそのものが自動削除されるわけではありません。",
     "reasons": [
@@ -323,12 +323,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-021": {
-    "stem": "数百万行のsales_dataを地域別に売上合計したい。読みやすさと保守性のためSpark SQLを使うには、どの手順が適切か。",
+    "stem": "データエンジニアが、数百万件のレコードを含むsales_dataというPySpark DataFrameを扱っています。地域ごとに売上金額の合計を求める必要があり、処理を読みやすく保守しやすくするためSpark SQLを使いたいと考えています。\n\nこの処理を実現するために行う手順はどれですか。",
     "options": [
-      "DataFrameのgroupByとaggを直接使う",
-      "CSVへ出して別のRDBでSQLを実行する",
-      "一時ビューとして登録してからSpark SQLで集約する",
-      "pandasへ変換し、SQL風の操作で集約する"
+      "PySparkのgroupByとaggメソッドを使い、DataFrameへ直接集約処理を書く。",
+      "DataFrameをCSVへ出力し、リレーショナルデータベースに読み込んで、そこでSQLクエリを実行する。",
+      "createOrReplaceTempViewでsales_dataを一時ビューとして登録し、Spark SQLで集約を実行する。",
+      "sales_dataをpandas DataFrameへ変換し、pandasでSQLに似た操作を使ってグループ化する。"
     ],
     "explanation": "DataFrameをSQLのFROM句から参照するには、一時ビュー名を付けます。データを外部DBやdriverのpandasへ移す必要はありません。",
     "reasons": [
@@ -339,7 +339,7 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-022": {
-    "stem": "Structured StreamingでファイルソースをAvailableNowで処理する。1回のmicro-batchへ入れる量を制御する入力ソースのoptionはどれか。",
+    "stem": "データエンジニアが、Spark Structured StreamingでファイルソースをAvailable-nowのマイクロバッチとして読み取る際、各マイクロバッチの大きさを制御したいと考えています。\n\nバッチの大きさを制御するために使用する入力ソースのオプションはどれですか。",
     "options": [
       "maxExecutorsPerTrigger",
       "maxCoresPerTrigger",
@@ -355,12 +355,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-023": {
-    "stem": "異なる2つのDataFrameをcreateOrReplaceTempViewで、同じmyViewという名前に順番に登録するとどうなるか。",
+    "stem": "createOrReplaceTempViewを使い、異なる2つのDataFrameをmyViewという同じビュー名で登録すると、どうなりますか。",
     "options": [
-      "同名のまま両方を同時に参照できる",
-      "2つが自動的にマージされる",
-      "同名ビューの重複エラーになる",
-      "後から登録したDataFrameで既存ビューが置き換わる"
+      "両方のDataFrameを、同じビュー名で同時に参照できるようになる。",
+      "2つのDataFrameがmyViewという1つのビューへ結合される。",
+      "myViewという同名ビューが既に存在することを示す例外が発生する。",
+      "同じビュー名で新たに登録したDataFrameにより、既存のビューが置き換えられる。"
     ],
     "explanation": "OrReplaceは「存在していたら置き換える」です。データのunionやjoinではなく、ビュー名が指すDataFrameの定義を更新します。",
     "reasons": [
@@ -371,12 +371,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-024": {
-    "stem": "path/to/dataに保存済みのデータを、source_dataの内容で上書きしたい。パスへの上書きを正しく表すSpark SQLはどれか。",
+    "stem": "データエンジニアが、path/to/dataという場所に保存されている既存の実データを上書きする必要があります。\n\n指定したパスのデータを上書きするコードはどれですか。",
     "options": [
-      "INSERTの直後にパスを指定する",
-      "INSERT OVERWRITE DIRECTORYにパスと形式を指定する",
-      "INSERT OVERWRITEの後にDIRECTORYなしでパスを指定する",
-      "OVERWRITEだけでSQLを始める"
+      "INSERT 'path/to/data' USING parquet OPTIONS (col1 1, col2 2, col3 'test')\nSELECT * FROM source_data;",
+      "INSERT OVERWRITE DIRECTORY 'path/to/data' USING parquet OPTIONS (col1 1, col2 2, col3 'test')\nSELECT * FROM source_data;",
+      "INSERT OVERWRITE 'path/to/data' USING parquet OPTIONS (col1 1, col2 2, col3 'test')\nSELECT * FROM source_data;",
+      "OVERWRITE 'path/to/data' USING parquet OPTIONS (col1 1, col2 2, col3 'test')\nSELECT * FROM source_data;"
     ],
     "explanation": "保存先がテーブル名ではなくディレクトリなので、INSERT OVERWRITE DIRECTORYを使います。OVERWRITEだけでなく、文全体の構文を確認する問題です。",
     "reasons": [
@@ -387,11 +387,11 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-025": {
-    "stem": "1台のメモリに収まらない大規模な構造化データに、複雑な集約や変換を行いたい。この用途に合うSparkのコンポーネントを2つ選べ。",
+    "stem": "開発者が、単一マシンのメモリに収まらない大規模な構造化データを扱う必要があります。このデータセットに対し、複雑な集約や変換を含むクエリも実行しなければなりません。\n\nこの状況で必要な機能を提供するApache Sparkのモジュールまたはコンポーネントを2つ選んでください。",
     "options": [
       "Structured Streaming",
       "Spark SQL",
-      "DataFrames",
+      "DataFrame",
       "GraphX",
       "MLlib"
     ],
@@ -405,12 +405,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-026": {
-    "stem": "以前より遅くなったjobを調べると、AQEがsort-merge joinをbroadcast joinへ変換しなくなり、shuffleが増えていた。最も考えやすい原因はどれか。",
+    "stem": "データエンジニアが、最近になって通常より遅くなった定期実行のSparkアプリケーションを調査しています。クエリ計画を確認すると、Adaptive Query Execution（AQE）がソートマージ結合をブロードキャスト結合へ変換しなくなっており、そのためSparkジョブで追加のシャッフルが発生しています。\n\nこの動作の変化として最も考えられる原因はどれですか。",
     "options": [
-      "小さい側のテーブルがbroadcast変換の閾値を超えた",
-      "ANALYZE TABLEから時間がたち統計が古くなった",
-      "Spark更新でAQEが無効になった",
-      "結合キーの偏りが大きくなった"
+      "小さい側のテーブルのサイズが増え、AQEがブロードキャスト結合へ変換できる設定上の閾値を超えた。",
+      "ANALYZE TABLEを実行してから長期間が経ち、テーブルの統計が古くなった。",
+      "Sparkのバージョン更新によってAQEが無効になった。",
+      "2つのテーブルの結合キーの分布が、時間とともにますます偏るようになった。"
     ],
     "explanation": "broadcastへ変えられるかは、小さい側の実行時サイズと閾値が重要です。データの増加で条件を超えると、AQEを有効にしたままでも変換しなくなります。",
     "reasons": [
@@ -421,12 +421,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-027": {
-    "stem": "不規則に届くストリームからorder_idで重複を除きたい。同じ注文の重複データが到着するイベント時刻の最大差は分かっている。遅延データを扱い、状態のメモリ使用も抑えるにはどうするか。",
+    "stem": "データエンジニアが、不規則な間隔でレコードが届くストリーミングデータを処理しています。order_idに基づいて重複レコードを除く必要があり、同じ注文の重複データは、イベント時刻の差が既知の一定範囲内で到着します。遅れて届くデータも効率よく扱い、メモリの過大な使用を抑える必要があります。\n\nこの重複除去には、どの方法を使用しますか。",
     "options": [
-      "最大時刻差より大きい遅延幅のwatermarkを設定し、order_idでdropDuplicatesWithinWatermarkする",
-      "timestamp列でdropDuplicatesし最新の時刻を残す",
-      "遅延到着があるstreamでは重複排除できない",
-      "watermarkなしでorder_idのdropDuplicatesを使う"
+      "重複データ同士のイベント時刻の最大差より長い遅延しきい値で`withWatermark()`を適用し、その後`dropDuplicatesWithinWatermark([\"order_id\"])`を使う。",
+      "タイムスタンプ列にdropDuplicates()を使い、最も新しいタイムスタンプに基づいて重複を除く。",
+      "遅れて到着するデータを考慮する必要があるストリーミングでは、重複除去はサポートされていない。",
+      "watermarkを設定せず、order_idにdropDuplicates()を使って重複を除く。"
     ],
     "explanation": "イベント時刻のwatermarkと業務キーを組み合わせ、重複を追跡する期間を制御します。重複排除は「最新行を必ず残す」操作ではありません。",
     "reasons": [
@@ -437,12 +437,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-028": {
-    "stem": "employee.csvのID・Name・Salaryを、それぞれInteger・String・Float型として明示的に読み込みたい。正しいコードを2つ選べ。",
+    "stem": "開発者がID・Name・Salary列を含むemployee.csvを持っています。このファイルをDataFrameへ読み込み、各列がそれぞれInteger・String・Float型として解釈されるよう、スキーマを明示的に定義する必要があります。\n\nこの要件を正しく満たすコードはどれですか。",
     "options": [
-      "StructTypeのリスト構文を崩し、schemaを渡さずcsvを読む",
-      "inferSchemaで型を自動推論する",
-      "DDL文字列「ID INT, Name STRING, Salary FLOAT」をcsvのschemaに渡す",
-      "3つのStructFieldを持つStructTypeをcsvのschemaに渡す"
+      "```\nschema = StructType([\n    StructField(\"ID\", IntegerType(), True),\n    StructField(\"Name\", StringType(), True)],\n    StructField(\"Salary\", FloatType(), True)\n)\n \ndf = spark.read.option(\"header\", \"true\") \\\n    .csv(\"employee.csv\")\n```",
+      "```\ndf = spark.read.option(\"inferSchema\", \"true\") \\\n    .csv(\"employee.csv\")\n```",
+      "```\ndf = spark.read.option(\"header\", \"true\") \\\n    .csv(\"employee.csv\", schema=\"ID INT, Name STRING, Salary FLOAT\")\n```",
+      "```\nschema = StructType([\n    StructField(\"ID\", IntegerType(), True),\n    StructField(\"Name\", StringType(), True),\n    StructField(\"Salary\", FloatType(), True)\n])\n \ndf = spark.read.option(\"header\", \"true\") \\\n    .csv(\"employee.csv\", schema=schema)\n```"
     ],
     "explanation": "schemaはStructTypeでもDDL形式の文字列でも指定できます。「文字列は常に不可」ではありません。明示指定とinferSchemaによる推論を区別します。",
     "reasons": [
@@ -453,12 +453,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-029": {
-    "stem": "my_dfを偶数でfilterし、そのDataFrameをprintすると、行ではなくDataFrame[number: bigint]と表示された。なぜか。",
+    "stem": "次のコードを考えてください。\n\n```\ndiv_by_2 = my_df.filter(\"number % 2 = 0\")\nprint(div_by_2)\n```\n\nこのコードの出力は次のとおりです。\n\n```\nDataFrame[number: bigint]\n```\n\nApache Sparkの実行モデルの観点から、この出力を最も適切に説明するものはどれですか。",
     "options": [
-      "filterで即座に計算して該当行を返したため",
-      "変換は遅延評価され、定義時には行の計算をしないため",
-      "変換のたびに自動でactionが実行されるため",
-      "filterがactionで、直ちに結果を返すため"
+      "filter変換はすぐに計算を開始し、条件に一致する行だけを返す。",
+      "Sparkの変換は全て遅延評価であり、その場ですぐに結果を計算しない。",
+      "Sparkでは変換を行うたび、その結果がアクションで自動処理される。",
+      "Sparkのfilterはアクションであり、my_dfの絞り込みをすぐに実行し、その結果をdiv_by_2として返す。"
     ],
     "explanation": "filterは新しいDataFrameの計画を作ります。print(DataFrame)は行データの取得ではありません。行を見るにはshowやcollectなどのactionを使います。",
     "reasons": [
@@ -469,10 +469,10 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-030": {
-    "stem": "変換の実行をactionまで遅らせ、実行前に計画全体を最適化できるSparkの特徴はどれか。",
+    "stem": "Apache Sparkの実行モデルのうち、変換の実行を遅らせ、アクションが呼ばれる前に実行計画を最適化できるようにする機能はどれですか。",
     "options": [
       "即時実行",
-      "Catalystによる最適化を伴う遅延評価",
+      "Catalystオプティマイザーと組み合わせた遅延評価",
       "変換の事前キャッシュ",
       "変換の並列実行"
     ],
@@ -485,12 +485,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-031": {
-    "stem": "Sparkのclient modeを正しく説明するものを2つ選べ。",
+    "stem": "Apache Sparkのclientモードを特徴づけるものはどれですか。",
     "options": [
-      "クライアントがworkerへ直接taskを送る",
-      "driverがclientマシンで動き、ネットワーク遅延の影響を受け得る",
-      "driverがcluster manager上で動く",
-      "driverがアプリ送信元で動き、デバッグしやすいが資源の制約を受け得る"
+      "clientモードではタスクをクライアントからワーカーノードへ直接送り、通信の負担を減らして性能を改善する。",
+      "clientモードではドライバーがクライアントマシン上で動き、ネットワーク通信のため遅延が大きくなる可能性がある。",
+      "clientモードではドライバーがクラスターマネージャー上で動き、複数マシンの資源を利用できる。",
+      "clientモードではドライバーがアプリケーションを送信したマシン上で動くため、デバッグしやすい一方、利用できる資源が限られる可能性がある。"
     ],
     "explanation": "client/clusterの区別は、driverがどこで動くかです。client modeでは送信元のプロセス側でdriverが動くため、そのマシンの資源と通信条件が重要になります。",
     "reasons": [
@@ -501,7 +501,7 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-032": {
-    "stem": "dfのsalary列にあるNULLをすべて0へ置き換えるコードはどれか。",
+    "stem": "DataFrame dfのsalary列にはnullが含まれています。\n\nこの列の全てのnullを0へ置き換えるコマンドはどれですか。",
     "options": [
       "df.fillna(\"salary\", 0)",
       "df.replaceNulls(\"salary\", 0)",
@@ -517,12 +517,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-033": {
-    "stem": "約5万行・20MBの単一CSVから日次売上を集計し、レポートを作る。最も適切な方法はどれか。",
+    "stem": "EC企業のデータアナリストが、約50,000件、合計約20MBの日次売上データを処理する必要があります。データは1つのCSVファイルに保存されており、集約を行って概要レポートを作成します。\n\nこの状況に最も適した方法はどれですか。",
     "options": [
-      "Spark Streamingのリアルタイム処理を構築する",
-      "ローカルPythonとpandasで分析する",
-      "分散Sparkクラスターを構築する",
-      "HDFSとMapReduceを構築する"
+      "Spark Streamingを使うリアルタイムのストリーミングパイプラインを構築し、到着するデータを処理する。",
+      "pandasライブラリを使うローカルのPythonスクリプトで、CSVを読み込み分析する。",
+      "分散クラスターにApache Sparkを構築し、データを並列処理する。",
+      "HDFSとMapReduceを含むHadoop環境を構成し、分散処理を行う。"
     ],
     "explanation": "1台で十分扱える小規模なバッチ処理です。分散処理の起動や運用の費用より、ローカルpandasの単純さが有利な場面です。",
     "reasons": [
@@ -533,13 +533,13 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-034": {
-    "stem": "読込み→filter→大きなDataFrameとのjoin→groupBy/agg→書込み、という処理の実行階層について正しい説明を2つ選べ。",
+    "stem": "データエンジニアが、次の順に処理するSparkアプリケーションを調整しています。\n\n- 分散ストレージからDataFrameへデータを読む。\n- filter変換で不要なレコードを除く。\n- 別の大きなDataFrameと結合する。\n- groupByとaggでデータを集約する。\n- 最終結果をストレージへ書く。\n\nSparkがこのアプリケーションの実行階層を構築する方法について、正しい説明を2つ選んでください。",
     "options": [
-      "groupBy/aggのshuffleでstageが増えることがある",
-      "アプリ全体が必ず書込みで起動する1つのjobになる",
-      "DataFrameの最適化ですべてのshuffleがなくなる",
-      "joinでshuffleが発生しstageが分かれることがある",
-      "filterもjoinもnarrowなので必ず同じstageになる"
+      "groupByとaggはシャッフルを起こすことがあり、実行計画に追加のステージが作られる可能性がある。",
+      "アプリケーション全体は、書き込みアクションで開始される1つのジョブとして実行される。",
+      "DataFrame APIの自動最適化により、全てのシャッフル操作が除去される。",
+      "結合はシャッフルを起こすことがあり、その結果、実行計画に新しいステージができる。",
+      "filterとjoinは両方ともnarrow変換なので、同じステージで実行される。"
     ],
     "explanation": "キーごとにデータを集めるjoinや集約は、shuffleとstage境界を生む可能性があります。最適化やAQEもあるため、アプリ全体のjob数を一律に決め付けないことが大切です。",
     "reasons": [
@@ -551,12 +551,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-035": {
-    "stem": "DataFrameのパーティションを100へ減らすとき、coalesceとrepartitionはどう違うか。",
+    "stem": "性能を改善するため、開発者がDataFrameのパーティション数を100へ減らそうとしています。この処理にcoalesce()とrepartition()のどちらを使うか、判断する必要があります。\n\nこの2つの関数は、それぞれどのように動作しますか。",
     "options": [
-      "coalesceは既存をまとめ、repartitionは全体をshuffleする",
-      "どちらも均等になるよう全体をshuffleする",
-      "どちらも分割を変更せず、同じ量のメモリを使う",
-      "coalesceが全体をshuffleし、repartitionは少ない移動で減らす"
+      "coalesce()は既存のパーティションをまとめ、シャッフルを最小限に抑えて数を減らす。一方、repartition()はデータ全体をシャッフルする。",
+      "どちらのメソッドも、クラスター全体へデータを均等にシャッフルする。",
+      "どちらのメソッドも、現在のパーティション分割を維持し、同じ量のメモリを必要とする。",
+      "coalesce()はデータ全体をシャッフルし、repartition()はシャッフルを最小限に抑えてパーティションを減らす。"
     ],
     "explanation": "coalesceはshuffleを避けて減らせますが、偏りが残ることがあります。repartitionはshuffleで再分配するため、その費用と分散の改善を引き換えにします。",
     "reasons": [
@@ -567,12 +567,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-036": {
-    "stem": "spot_priceが110.50以上の行をfilterしcountしている。Spark 3.5で追加された組込み関数を使って同じ件数を求めるにはどうするか。",
+    "stem": "開発者が、Spark 3.5.0で追加された組み込み関数を活用するため、古いSparkコードの書き換えを考えています。\n\n既存のDataFrameコードは次のとおりです。\n\n```\nimport pyspark.sql.functions as F\n \nmin_price = 110.50\n \nresult_df = prices_df \\\n    .filter(F.col(\"spot_price\") >= F.lit(min_price)) \\\n    .agg(F.count(\"*\"))\n```\n\n新しい組み込み機能を使って同じ処理へ書き換えるには、どのコードを使用しますか。",
     "options": [
-      "条件を満たすかの列をwithColumnで追加する",
-      "agg内のcount_ifにspot_price >= min_priceを渡す",
-      "spot_priceの最小値・最大値を集約する",
-      "列のcountを出してからmin_priceという文字列と比較する"
+      "```\nresult_df = prices_df \\\n    .withColumn(\"valid_price\",\n        F.when(F.col(\"spot_price\") > F.lit(min_price), 1).otherwise(0)\n    )\n```",
+      "```\nresult_df = prices_df \\\n    .agg(F.count_if(F.col(\"spot_price\") >= F.lit(min_price)))\n```",
+      "```\nresult_df = prices_df \\\n    .agg(F.min(\"spot_price\"), F.max(\"spot_price\"))\n```",
+      "```\nresult_df = prices_df \\\n    .agg(F.count(\"spot_price\").alias(\"spot_price\")) \\\n    .filter(F.col(\"spot_price\") > F.lit(\"min_price\"))\n```"
     ],
     "explanation": "count_ifは条件がTRUEの行を数えます。元の比較演算子「>=」も維持し、条件付き件数を1つの集約で表せる点を押さえます。",
     "reasons": [
@@ -583,12 +583,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-037": {
-    "stem": "1000パーティションのdfを100へ減らしたい。パーティション間の全体shuffleを避けるメソッドはどれか。",
+    "stem": "データエンジニアが、1000パーティションの大きなSpark DataFrame dfを作成し、100パーティションに減らす必要があります。\n\nパーティション間でデータを再シャッフルせずに、パーティション数を減らせる方法はどれですか。",
     "options": [
-      "repartition(100)",
-      "limit(100)",
-      "head(100)",
-      "coalesce(100)"
+      "new_df = df.repartition(100)",
+      "new_df = df.limit(100)",
+      "new_df = df.head(100)",
+      "new_df = df.coalesce(100)"
     ],
     "explanation": "パーティション数を減らし、再分散を避けるならcoalesceです。limitやheadの数値は、パーティション数ではなく取得する行数を表します。",
     "reasons": [
@@ -599,12 +599,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-038": {
-    "stem": "Adaptive Query Execution（AQE）の主な利点はどれか。",
+    "stem": "Apache SparkでAdaptive Query Execution（AQE）を使う主な利点は何ですか。",
     "options": [
-      "実行前だけ最適化し、実行中は変えない",
-      "実行時の統計で計画を調整し、偏りやjoin戦略を改善する",
-      "taskは並列化するが実行時指標で戦略を変えない",
-      "taskをノードに配るが実行計画は変えない"
+      "実行前にSparkがクエリ計画を最適化できるが、実行中には調整しない。",
+      "実行中にクエリ計画を動的に調整し、データの偏りへの対処、結合戦略の最適化、クエリ全体の性能改善を行える。",
+      "タスクを並列化してクエリ実行を改善するが、データの偏りなど実行時の指標に応じて戦略を変えない。",
+      "クラスターのノード間へタスクを自動配分するが、実行中のクエリ計画は変更しない。"
     ],
     "explanation": "AQEの要点は「実行中に分かった情報を使う」ことです。実際のデータサイズなどを基に、join戦略やshuffle後の処理を調整できます。",
     "reasons": [
@@ -615,12 +615,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-039": {
-    "stem": "dfからusers_vwという一時ビューを作った。セッション終了前に何をしておけば、新しいセッションで一時ビューを再作成せず、そのデータをSQLで参照できるか。",
+    "stem": "データエンジニアが、次のコードでusers_vwというビューを作成しました。\n\n```\ndf.createOrReplaceTempView(\"users_vw\")\n```\n\n一時ビューを再作成せず、新しいセッションでもSQLからデータを参照できるようにするには、現在のセッションを終了する前にどの方法を取りますか。",
     "options": [
-      "一時ビューをそのまま直接queryする",
-      "データを永続テーブルとして保存する",
-      "同じ一時ビューを作り直してqueryする",
-      "一時ビューの定義だけを保存して後からqueryする"
+      "Sparkを使ってusers_vwビューへ直接問い合わせる。",
+      "users_vwのデータをテーブルとして永続化する。",
+      "users_vwビューを再作成し、Sparkから問い合わせる。",
+      "users_vwの定義を保存し、後からSparkで問い合わせる。"
     ],
     "explanation": "一時ビューは作成元セッションの寿命に結び付きます。セッションを越えてデータを参照するには、終了前に永続テーブルなどへ保存しておきます。",
     "reasons": [
@@ -631,12 +631,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-040": {
-    "stem": "saveAsTableの保存先をデフォルトwarehouseではなく/some/pathに指定したい。有効なコードを2つ選べ。",
+    "stem": "データエンジニアが、ファイルベースのデータソースを特定の保存先へ永続化する必要があります。しかし、テーブルとして保存すると、既定のwarehouseディレクトリへ自動的に保存されてしまいます。\n\n既定のwarehouseパスではなく、独自の保存先へデータを書き込むコードはどれですか。",
     "options": [
-      "writeを関数として呼びpathを渡す",
-      "saveAsTableを実行した後でoptionを付ける",
-      "writerのoption(\"path\", ...)を設定してからsaveAsTableする",
-      "saveAsTableのpathキーワード引数で指定する"
+      "users.write(path=\"/some/path\").saveAsTable(\"default_table\")",
+      "users.write.saveAsTable(\"default_table\").option(\"path\", \"/some/path\")",
+      "users.write.option(\"path\", \"/some/path\").saveAsTable(\"default_table\")",
+      "users.write.saveAsTable(\"default_table\", path=\"/some/path\")"
     ],
     "explanation": "writer optionは保存を実行する前に指定します。saveAsTableは追加optionをキーワード引数でも受け取れるため、path指定には2通りの書き方があります。",
     "reasons": [
@@ -647,12 +647,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-041": {
-    "stem": "利用者プロフィールのいずれか1列でもNULLなら、その行を学習用データから除きたい。どのコードを使うか。",
+    "stem": "データサイエンティストが、機械学習モデルの特徴量を作るためにユーザープロフィールを分析しています。探索的分析の中で、複数フィールドにnullを含むレコードがあり、モデリングに信頼して使えないことが分かりました。\n\nプロフィールテーブルのスキーマは次のとおりです。\n\n```\nuser_id STRING\nusername STRING\nfull_name STRING\ndate_of_birth DATE\nprimary_email STRING\ncreated_ts TIMESTAMP\nupdated_ts TIMESTAMP\nlast_login_ts TIMESTAMP\n```\n\n後続処理の前に、どれか1列でもnullを含むレコードは全て削除することにしました。\n\nこの要件を満たすSparkコードはどれですか。",
     "options": [
-      "na.drop(thresh=0)",
-      "na.drop(how=\"all\")",
-      "na.drop(how=\"any\")",
-      "na.drop(how=\"all\", thresh=None)"
+      "filtered_df = users_raw_df.na.drop(thresh=0)",
+      "filtered_df = users_raw_df.na.drop(how='all')",
+      "filtered_df = users_raw_df.na.drop(how='any')",
+      "filtered_df = users_raw_df.na.drop(how='all', thresh=None)"
     ],
     "explanation": "anyは「どれか1つでも欠損」、allは「全部が欠損」です。今回は列を限定せず、1か所でもNULLのある行を削除します。",
     "reasons": [
@@ -663,12 +663,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-042": {
-    "stem": "Structured Streamingで、新着データを5秒間隔のmicro-batchで処理したい。開始間隔を指定するコードはどれか。",
+    "stem": "データエンジニアが、Apache Spark Structured Streamingでリアルタイム分析パイプラインを作成しています。到着するデータを、5秒という一定間隔で実行するマイクロバッチとして処理したいと考えています。トリガーで、各マイクロバッチの実行を開始するタイミングを制御する必要があります。\n\nこの要件を満たすコードはどれですか。",
     "options": [
-      "trigger(continuous=\"5 seconds\")",
-      "引数なしのtrigger()",
-      "trigger(processingTime=\"5 seconds\")",
-      "trigger(processingTime=5000)"
+      "```\nquery = df.writeStream \\\n    .outputMode(\"append\") \\\n    .trigger(continuous=\"5 seconds\") \\\n    .start()\n```",
+      "```\nquery = df.writeStream \\\n    .outputMode(\"append\") \\\n    .trigger() \\\n    .start()\n```",
+      "```\nquery = df.writeStream \\\n    .outputMode(\"append\") \\\n    .trigger(processingTime=\"5 seconds\") \\\n    .start()\n```",
+      "```\nquery = df.writeStream \\\n    .outputMode(\"append\") \\\n    .trigger(processingTime=5000) \\\n    .start()\n```"
     ],
     "explanation": "micro-batchの起動間隔にはprocessingTimeを使い、Pythonでは期間の文字列を渡します。処理が5秒以上かかった場合まで、必ず5秒ごとに重複起動するわけではありません。",
     "reasons": [
@@ -679,12 +679,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-043": {
-    "stem": "dates_dfのtimestamp列から日付部分を取り出し、新しいdate列をDateTypeにしたい。正しいコードはどれか。",
+    "stem": "データアナリストがdates_dfというDataFrameを扱っています。既存のtimestamp列からdateという新しい列を作成する必要があり、新しい列はSparkのDateTypeでなければなりません。\n\nタイムスタンプから日付部分を取り出すには、どのコードを使用しますか。",
     "options": [
-      "unix_timestampでUNIX秒を取る",
-      "to_dateで日付へ変換する",
-      "date_formatでyyyy-MM-ddの文字列を作る",
-      "from_unixtimeで日時文字列を作る"
+      "dates_df.withColumn(\"date\", f.unix_timestamp(\"timestamp\")).show()",
+      "dates_df.withColumn(\"date\", f.to_date(\"timestamp\")).show()",
+      "dates_df.withColumn(\"date\", f.date_format(\"timestamp\", \"yyyy-MM-dd\")).show()",
+      "dates_df.withColumn(\"date\", f.from_unixtime(\"timestamp\")).show()"
     ],
     "explanation": "見た目が日付でも、文字列とDateTypeは別です。to_dateは日付型を返し、date_formatは書式化した文字列を返します。",
     "reasons": [
@@ -695,12 +695,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-044": {
-    "stem": "2億行の取引DataFrameと、3000行の商品DataFrameを結合する。性能改善に適した方法はどれか。",
+    "stem": "データサイエンティストが、Databricks上のApache Sparkで大規模なデータ分析を行っています。2億行の顧客取引DataFrameと、3000行の商品情報を持つはるかに小さいDataFrameを結合する処理が必要です。\n\n結合の性能を改善するための最適な方法はどれですか。",
     "options": [
-      "大きい取引DataFrameをbroadcastする",
-      "両方をソートしてsort-merge joinする",
-      "両方を分散させshuffle hash joinする",
-      "小さい商品DataFrameをbroadcastする"
+      "大きい側のDataFrameを配布して、ブロードキャスト結合を行う。",
+      "結合前に両方のDataFrameを並べ替えて、ソートマージ結合を行う。",
+      "両方のDataFrameをクラスター全体へ均等に分配して、シャッフルハッシュ結合を行う。",
+      "小さい側のDataFrameを配布して、ブロードキャスト結合を行う。"
     ],
     "explanation": "十分小さい表を各executorへ配ると、大きい表を結合のために動かすshuffleを避けられます。broadcastする側がメモリに収まるかも確認します。",
     "reasons": [
@@ -711,12 +711,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-045": {
-    "stem": "Sparkのjob・stage・taskの正しい包含関係はどれか。",
+    "stem": "Apache Sparkの実行時における、ジョブ・ステージ・タスクの正しい関係はどれですか。",
     "options": [
-      "jobはstageに分かれ、stageはtaskに分かれる",
-      "jobはtaskを持ち、taskはstageを持つ",
-      "stageはjobを持ち、jobはtaskを持つ",
-      "stageはtaskを持ち、taskはjobを持つ"
+      "1つのジョブは複数のステージから成り、各ステージは複数のタスクから成る。",
+      "1つのジョブは複数のタスクを含み、各タスクは複数のステージを含む。",
+      "1つのステージは複数のジョブから成り、各ジョブは複数のタスクを含む。",
+      "1つのステージは複数のタスクを含み、各タスクは複数のジョブを含む。"
     ],
     "explanation": "大きい単位からjob → stage → taskの順です。stage内では、処理対象のパーティションに対するtaskが並列に動きます。",
     "reasons": [
@@ -727,12 +727,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-046": {
-    "stem": "テストをlocal modeで実行するとき、手元の計算資源を活用するにはどうするか。",
+    "stem": "テスト中にSparkジョブをlocalモードで実行するとき、資源を最適に活用する方法はどれですか。",
     "options": [
-      "localをやめてcluster modeにする",
-      "利用可能なCPUコアに応じてlocal thread数を増やす",
-      "dynamicAllocationを有効にする",
-      "executor.memoryを非常に大きくする"
+      "localモードではなくclusterモードで実行するよう、アプリケーションを設定する。",
+      "利用可能なCPUコア数に応じて、ローカルのスレッド数を増やす。",
+      "spark.dynamicAllocation.enabledを有効にして、資源を動的に増減させる。",
+      "spark.executor.memoryを非常に大きな値へ設定する。"
     ],
     "explanation": "local modeでは、local[n]やlocal[*]で使うthread数を指定できます。実際に使えるコア数に応じた並列度にすることが要点です。",
     "reasons": [
@@ -743,7 +743,7 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-047": {
-    "stem": "各executorで同時実行できるtask数に直接関係するSpark設定はどれか。",
+    "stem": "各エグゼキューターで同時に実行できるタスクの数を決めるSparkの設定はどれですか。",
     "options": [
       "spark.executor.cores",
       "spark.task.maxFailures",
@@ -759,12 +759,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-048": {
-    "stem": "_metadata.file_pathが使えるDatabricks Runtimeで、各テキストファイルの全文とパスを1行にしたい。現在のspark.read.textでは1行ずつに分かれる。何を変えるか。",
+    "stem": "非表示フィールド_metadata.file_pathに対応するDatabricks Runtimeを使用しているとします。\n\nデータサイエンティストが、複数のプレーンテキストファイルを含むディレクトリを取り込み、結果のDataFrameの各行へ、1ファイルの全文とそのファイルのフルパスを格納する必要があります。\n\n次の初期コードでファイルは読めますが、ファイルごとではなく、テキストの行ごとにDataFrameの行が作られます。\n\n```\nraw_txt_path = '/datasets/raw_txt/*'\n \ncorpus = spark.read.text(raw_txt_path) \\\n    .select(\"*\", \"_metadata.file_path\")\n```\n\n各行へ個々のテキスト行ではなくファイル全体の内容を入れるには、どの変更を行いますか。",
     "options": [
-      "textにwholetext=Trueを指定する",
-      "lineSepに改行を指定する",
-      "wholetext=Falseを指定する",
-      "lineSepにカンマを指定する"
+      "text()へwholetext=Trueを追加する。",
+      "`text()`関数に`lineSep=\"\\n\"`オプションを追加する。",
+      "text()へwholetext=Falseを追加する。",
+      "`text()`関数に`lineSep=\",\"`オプションを追加する。"
     ],
     "explanation": "wholetext=Trueにすると、1ファイルの全文が1つの文字列になります。区切り文字の変更と、ファイル全体を1レコードにする指定は別です。",
     "reasons": [
@@ -775,12 +775,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-049": {
-    "stem": "Pandas API on Sparkでデータを変換する主な利点はどれか。",
+    "stem": "データ変換にpandas API on Sparkを使う主な利点は何ですか。",
     "options": [
-      "Python専用なので学習が不要になる",
-      "即時評価で毎回すぐに計算する",
-      "1ノードのメモリ内だけで動く",
-      "pandasに似たAPIを使いながらクラスターへ計算を分散できる"
+      "Pythonでしか利用できないため、開発者の習得の負担が減る。",
+      "即時評価で計算をすぐに実行するため、使いやすい。",
+      "単一ノードだけで実行し、メモリ上のDataFrameに依存するため、コスト効率がよい。",
+      "pandas APIの豊富な機能を提供しながら、クラスター全体で利用可能な全コアを活用し、クエリを高速に実行できる。"
     ],
     "explanation": "pandasに慣れた操作で、Sparkの分散処理を利用できる点が中心です。すべての操作が必ず速くなるわけではなく、shuffleやdriverへの収集には注意が必要です。",
     "reasons": [
@@ -791,13 +791,13 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-050": {
-    "stem": "大量データを扱い、高水準SQL APIとbatch・streaming両方を使いたい。要件に特に合うSparkの利点を2つ選べ。",
+    "stem": "データエンジニアリングチームが、ビッグデータ処理に使う技術構成を比較しています。大規模データセットを処理し、SQLによる問い合わせの高水準APIを提供し、バッチとストリーミングの両方の処理を効率よくサポートする基盤が必要です。\n\nこの要件を最もよく満たすApache Sparkの利点を2つ選んでください。",
     "options": [
-      "Spark自体が必ずserverlessで、クラスター管理が不要",
-      "Webフロントエンド開発フレームワークとの統合",
-      "分散機械学習の訓練機能がある",
-      "Spark SQLでSQLクエリを実行できる",
-      "DataFrameやDatasetなど構造化データ用の成熟したAPIがある"
+      "サーバーレスの仕組みで動くため、クラスターを管理する必要がない。",
+      "フロントエンドアプリケーションを作るためのWeb開発フレームワークと容易に連携する。",
+      "分散した機械学習モデルの学習機能が標準で組み込まれている。",
+      "Spark SQLを通じ、SQLによる問い合わせを標準でサポートする。",
+      "構造化データの処理と操作のため、DataFrameやDatasetなどの成熟したAPIを提供する。"
     ],
     "explanation": "SQLと構造化データのAPIが、今回の処理要件に直結します。Sparkを使うことと、特定サービスのserverless構成を使うことは同じではありません。",
     "reasons": [
@@ -809,12 +809,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-051": {
-    "stem": "小さ過ぎるtaskが大量に発生し、パーティション過多で遅くなっている。全体shuffleなしでパーティション数を減らすにはどうするか。",
+    "stem": "データエンジニアは、DataFrameのパーティションが多すぎるため小さなタスクが大量に発生し、Sparkアプリケーションの実行が遅くなっていることに気付きました。\n\n完全なシャッフルを発生させずにパーティション数を減らし、性能を改善するにはどうすればよいですか？",
     "options": [
-      "distinctで似たパーティションをまとめる",
-      "coalesceに小さいパーティション数を指定する",
-      "sortByで並べ替える",
-      "repartitionに小さいパーティション数を指定する"
+      "`distinct()`変換を適用し、似たパーティションを結合する。",
+      "`coalesce()`変換を使用し、現在より少ないパーティション数を指定する。",
+      "`sortBy()`変換を使用してデータを再編成する。",
+      "`repartition()`変換を使用し、現在より少ないパーティション数を指定する。"
     ],
     "explanation": "目的は行の重複除去ではなく、実行単位を減らすことです。coalesceは既存パーティションをまとめ、shuffleの費用を抑えて数を減らせます。",
     "reasons": [
@@ -825,12 +825,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-052": {
-    "stem": "小さいdf1と大きいdf2を、df2.join(broadcast(df1), on=\"id\")で結合する。broadcastの目的は何か。",
+    "stem": "エンジニアはdf1とdf2という2つのDataFrameを扱っています。df1は小さく、df2は大きいDataFrameです。結合処理の性能を改善するため、次のブロードキャスト結合を使用します。\n\n```\nfrom pyspark.sql.functions import broadcast\n \nresult = df2.join(broadcast(df1), on='id', how='inner')\n```\n\nこの状況で`broadcast()`を使用する目的は何ですか？",
     "options": [
-      "結合前にidを絞り込む",
-      "両方のパーティションサイズを大きくする",
-      "小さい表を各executorへ配り、shuffleを減らす",
-      "idの完全一致だけを保証する"
+      "結合処理を実行する前に`id`の値をフィルタリングする。",
+      "`df1`と`df2`の両方のパーティションサイズを増やす。",
+      "小さいDataFrameをすべてのExecutorノードに複製し、シャッフル処理を減らす。",
+      "`id`の値が完全に一致する場合にのみ結合が行われるようにする。"
     ],
     "explanation": "broadcastは結合条件ではなく、結合の実行方式に関するヒントです。小さい側の複製を各executorに置き、大きい側の再分散を抑えます。",
     "reasons": [
@@ -841,12 +841,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-053": {
-    "stem": "IoTの元イベントはevent_ts・sensor_id・metric_valueで識別できる。取込み時に付くingest_tsやsource_file_pathが違っても、同じ元イベントを重複として除きたい。どのコードが適切か。",
+    "stem": "データエンジニアは、IoTセンサーデータを取り込んで生成されたParquetテーブルに重複レコードがあることを発見しました。\n\nテーブルのスキーマは次のとおりです。\n\n```\nevent_ts TIMESTAMP\nsensor_id STRING\nmetric_value LONG\ningest_ts TIMESTAMP\nsource_file_path STRING\n```\n\n各IoTセンサーイベントには、もともとevent_ts、sensor_id、metric_valueが含まれています。取り込み時にingest_tsとsource_file_pathが追加されます。分析の結果、実際のイベントのフィールド値は同じであるにもかかわらず、取り込み処理が重複レコードを作成していることが分かりました。\n\n元のイベントのフィールドに基づいて重複を正しく削除するには、どのコードを使用すべきですか？",
     "options": [
-      "ingest_ts・sensor_id・metric_value・source_file_pathでdropDuplicatesする",
-      "全列でdropDuplicatesする",
-      "元イベント3列でgroupByするだけ",
-      "event_ts・sensor_id・metric_valueをsubsetにしてdropDuplicatesする"
+      "dedup_df = iot_bronze_df.dropDuplicates([\"ingest_ts\", \"sensor_id\", \"metric_value\", \"source_file_path\"])",
+      "dedup_df = iot_bronze_df.dropDuplicates()",
+      "dedup_df = iot_bronze_df.groupBy([\"event_ts\", \"sensor_id\", \"metric_value\"])",
+      "dedup_df = iot_bronze_df.dropDuplicates([\"event_ts\", \"sensor_id\", \"metric_value\"])"
     ],
     "explanation": "重複の定義を元イベントの3列へ限定します。取込み時刻やファイルパスまで比較すると、同じイベントの別取込みを重複と判断できません。",
     "reasons": [
@@ -857,12 +857,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-054": {
-    "stem": "DataFrameをJSON形式で既存パスへ上書きする有効なコードを2つ選べ。",
+    "stem": "DataFrameを書き込む際、既存のJSONファイルを上書きするには、どのコマンドを使用すべきですか？",
     "options": [
-      "write.mode(\"overwrite\").json(path)",
-      "write.overwrite.json(path)",
-      "write.json(path, overwrite=True)",
-      "write.format(\"json\").save(path, mode=\"overwrite\")"
+      "df.write.mode(\"overwrite\").json(\"path/to/file\")",
+      "df.write.overwrite.json(\"path/to/file\")",
+      "df.write.json(\"path/to/file\", overwrite=True)",
+      "df.write.format(\"json\").save(\"path/to/file\", mode=\"overwrite\")"
     ],
     "explanation": "書込みモードはmode(\"overwrite\")、またはsaveのmode引数で指定できます。overwriteというwriterプロパティや、jsonのoverwrite=Trueではありません。",
     "reasons": [
@@ -873,12 +873,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-055": {
-    "stem": "color・fruit・v1・v2列を持つdfを、partitionBy(\"color\", \"fruit\").parquet(path)で保存する。どのように保存されるか。",
+    "stem": "開発者はcolor、fruit、v1、v2という列を持つDataFrameを扱っています。開発者は次のコードでDataFrameを書き込みます。\n\n```\ndf.write.partitionBy(\"color\", \"fruit\").parquet(\"/path/to/output\")\n```\n\nこのコードを実行すると、どのような結果になりますか？",
     "options": [
-      "全行が単一Parquetファイルになる",
-      "partition列にNULLがあると必ず失敗する",
-      "既存Parquetファイルの中へ新しいpartitionを追加する",
-      "colorとfruitの値の組合せごとにディレクトリができる"
+      "すべてのデータが1つのParquetファイルに書き込まれる。",
+      "パーティション列のいずれかにnull値があると、処理が失敗する。",
+      "既存のParquetファイルに新しいパーティションが自動的に追記される。",
+      "colorとfruitの値の一意な組み合わせごとに、別々のディレクトリが作成される。"
     ],
     "explanation": "保存時のpartitionByは、列値に応じてディレクトリを分けます。ディレクトリごとにファイルが必ず1個になるという意味ではありません。",
     "reasons": [
@@ -889,12 +889,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-056": {
-    "stem": "event_timeに10分のwatermarkを設定し、15分windowでcountする。遅延到着データについて何が保証されるか。",
+    "stem": "データエンジニアはApache Spark Structured Streamingでストリーミングパイプラインを構築し、遅れて到着するイベントを処理するためにウォーターマークを適用しています。使用しているコードは次のとおりです。\n\n```\ninputStream\n.withWatermark(\"event_time\", \"10 minutes\")\n.groupBy(window(\"event_time\", \"15 minutes\"))\n.count()\n```\n\nこのウォーターマークが提供する保証を正しく説明しているのはどれですか？",
     "options": [
-      "15分windowに入るなら、watermarkを超えたデータも必ず含む",
-      "閾値を超えたデータはすべて必ず除外する",
-      "遅れたデータは次のwindowへ移す",
-      "観測した最新event_timeから10分以内の遅れなら処理する"
+      "ウォーターマークのしきい値（10分）を超えて遅れて到着したレコードでも、15分のウィンドウ内に入っていれば自動的に集計に含まれる。",
+      "ウォーターマークのしきい値より10分を超えて遅れて到着するデータは、すべて無視され、集計から除外される。",
+      "最新のウォーターマークより10分を超えて遅れて到着するデータも処理されるが、次のウィンドウに割り当てられる。",
+      "最新の`event_time`からの遅れが10分以内のレコードは、処理され、ウィンドウ集計に含まれることが保証される。"
     ],
     "explanation": "watermarkの保証は一方向です。許容遅延内のデータは落としませんが、それより古いデータは処理される場合も捨てられる場合もあります。window長と遅延許容幅も別です。",
     "reasons": [
@@ -905,12 +905,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-057": {
-    "stem": "Spark 3.5.6の標準catalogで、未作成のusersを既存/data/input.jsonの外部表として登録したい。入力は1行1JSONで、レコードごとのfieldは異なるが型は互換。schemaを推論し、不要なschema統合optionを付けないSQLを2つ選べ。",
+    "stem": "データエンジニアはSpark SQLを使用しており、/data/input.jsonに保存された大きなJSONファイルを扱っています。この改行区切りのJSONファイルには、フィールドの構成が異なるものの、フィールドの型には互換性があるレコードが含まれています。まずDataFrameに読み込むことなく、このファイルを直接クエリできる外部テーブルをSpark SQLで作成したいと考えています。\n\n次の要件を満たす必要があります。\n\n- /data/input.jsonからデータを読み取る、usersという名前の外部テーブルを作成する。\n- Sparkにスキーマを自動推論させる。\n- スキーマが異なるレコードを統合して扱う。\n\nSpark 3.5.6の組み込みセッションカタログを使用し、usersはまだ存在しないものとします。不要なスキーマ統合用オプションを追加せず、通常のJSONスキーマ推論によってこのタスクを実現する文はどれですか？（2つ選択）",
     "options": [
-      "USING jsonとOPTIONS(path ...)で表を作る",
-      "USING jsonとLOCATIONで表を作る",
-      "EXTERNAL表にmergeSchema=trueを付ける",
-      "EXTERNAL表にschemaMerge=trueを付ける"
+      "```\nCREATE TABLE users USING json\nOPTIONS (path '/data/input.json')\n```",
+      "```\nCREATE TABLE users USING json\nLOCATION '/data/input.json'\n```",
+      "```\nCREATE EXTERNAL TABLE users USING json\nOPTIONS (path '/data/input.json', mergeSchema 'true')\n```",
+      "```\nCREATE EXTERNAL TABLE users USING json\nOPTIONS (path '/data/input.json', schemaMerge 'true')\n```"
     ],
     "explanation": "JSONは入力を調べてfieldを含むschemaを推論できます。外部の既存パスはOPTIONS(path ...)でもLOCATIONでも指定でき、JSONのためにmergeSchemaを付ける必要はありません。",
     "reasons": [
@@ -921,12 +921,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-058": {
-    "stem": "明示schemaでCSVを読み、filter・select・groupBy集約でreduced_dfを作った後、count、showの順に呼ぶ。変換パイプラインを最初に実行するのはどの段階か。",
+    "stem": "データサイエンティストはApache Sparkで大規模なデータセットを分析しており、次のコードを作成しました。\n\n```\ndf = spark.read.schema(\"error_column STRING, timestamp STRING\").option(\"header\", True).csv(\"large_dataset.csv\")\n \nfiltered_df = df.filter(col(\"error_column\").contains(\"error\"))\n \nmapped_df = filtered_df.select(\n    split(col(\"timestamp\"), \" \").getItem(0).alias(\"date\"),\n    lit(1).alias(\"count\")\n)\n \nreduced_df = mapped_df.groupBy(\"date\").sum(\"count\")\n \nreduced_df.count()\nreduced_df.show()\n```\n\nDataFrameが構築された後、reduced_dfを生成する変換パイプラインを最初に実行するのは、選択肢のどのステップですか？",
     "options": [
-      "filterを定義したとき",
-      "countを呼んだとき",
-      "groupByを定義したとき",
-      "showを呼んだとき"
+      "`filter`変換が適用されるとき。",
+      "`count`アクションが実行されるとき。",
+      "`groupBy`変換が適用されるとき。",
+      "`show`アクションが実行されるとき。"
     ],
     "explanation": "DataFrame変換は計画を作り、最初のactionで実行します。このコードではcountがshowより先にあります。問題はDataFrame構築後のパイプライン実行時点を問っています。",
     "reasons": [
@@ -937,12 +937,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-059": {
-    "stem": "customerDFのemail列を、usernameとdomainへ分けたい。通常の「利用者名@ドメイン」の入力に対して有効なコードを2つ選べ。",
+    "stem": "データサイエンティストは、顧客情報を格納したcustomerDFというSpark DataFrameを扱っています。email列には顧客のメールアドレスが含まれています。この列をusernameとdomainという2つの新しい列に分割する必要があります。\n\nemail列をusernameとdomainに正しく分割するコードはどれですか？",
     "options": [
-      "固定文字数のsubstrで前後を取る",
-      "@でsplitし、getItem(0)とgetItem(1)を取る",
-      "substring_indexで@の前と後を取る",
-      "両列とも@を削除した文字列にする"
+      "```\ncustomerDF.select(\n    col(\"email\").substr(0, 5).alias(\"username\"),\n    col(\"email\").substr(-5).alias(\"domain\")\n)\n```",
+      "```\ncustomerDF.withColumn(\"username\", split(col(\"email\"), \"@\").getItem(0)) \\\n          .withColumn(\"domain\", split(col(\"email\"), \"@\").getItem(1))\n```",
+      "```\ncustomerDF.withColumn(\"username\", substring_index(col(\"email\"), \"@\", 1)) \\\n          .withColumn(\"domain\", substring_index(col(\"email\"), \"@\", -1))\n```",
+      "```\ncustomerDF.select(\n    regexp_replace(col(\"email\"), \"@\", \"\").alias(\"username\"),\n    regexp_replace(col(\"email\"), \"@\", \"\").alias(\"domain\")\n)\n```"
     ],
     "explanation": "長さではなく、@という区切り位置を使います。splitでできる配列は0始まりで、substring_indexは正のcountで前側、負のcountで後側を取り出せます。",
     "reasons": [
@@ -953,12 +953,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-060": {
-    "stem": "dfをParquet形式で保存し、country列でディレクトリ分割し、保存先の既存データを上書きしたい。正しいコードはどれか。",
+    "stem": "データエンジニアは、DataFrame `df`をParquetファイルに書き込み、出力をcountry列でパーティション分割し、出力先に既存のデータがあれば上書きする必要があります。\n\nApache Sparkでこれを実現するには、どのコードを使用すべきですか？",
     "options": [
-      "mode(\"overwrite\")・partitionBy(\"country\")・parquetを指定する",
-      "appendモードとpartitionByを使う",
-      "overwriteでParquet保存するがpartitionByを付けない",
-      "partitionByでParquet保存するがoverwriteを付けない"
+      "```\ndf.write.mode(\"overwrite\").partitionBy(\"country\").parquet(\"/data/output\")\n```",
+      "```\ndf.write.mode(\"append\").partitionBy(\"country\").parquet(\"/data/output\")\n```",
+      "```\ndf.write.mode(\"overwrite\").parquet(\"/data/output\")\n```",
+      "```\ndf.write.partitionBy(\"country\").parquet(\"/data/output\")\n```"
     ],
     "explanation": "形式・保存モード・partition列の3条件を確認します。どれか1つが欠けても、指定された保存方法にはなりません。",
     "reasons": [
@@ -969,12 +969,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-061": {
-    "stem": "構造化データの処理、SQLクエリ、機械学習を組み合わせる場合、適したSparkの機能の組み合わせはどれですか。",
+    "stem": "データサイエンティストは、大量の構造化データの処理、SQLベースのクエリの実行、機械学習アルゴリズムの適用を含むプロジェクトに取り組んでいます。このワークフローにApache Sparkを使用する予定です。\n\nこれらの要件を最もよく満たすApache Sparkモジュールの組み合わせはどれですか？",
     "options": [
-      "DataFrame・Structured Streaming・GraphX",
-      "Spark SQL・pandas API・Structured Streaming",
-      "Spark Streaming・GraphX・pandas API",
-      "DataFrame・Spark SQL・MLlib"
+      "Spark DataFrames, Structured Streaming, and GraphX",
+      "Spark SQL, Pandas API on Spark, and Structured Streaming",
+      "Spark Streaming, GraphX, and Pandas API on Spark",
+      "Spark DataFrames, Spark SQL, and MLlib"
     ],
     "explanation": "表形式のデータはDataFrame、SQLによる分析はSpark SQL、機械学習はMLlibが担当します。要件と各コンポーネントの役割を対応させます。",
     "reasons": [
@@ -985,12 +985,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-062": {
-    "stem": "KafkaのfeedトピックをStructured Streamingで読みます。接続先は設定済みです。空欄に入れる設定はどれですか。",
+    "stem": "データエンジニアは、`feed`という名前のKafkaトピックからメッセージを読み取るStreaming DataFrameを作成する必要があります。\n\n使用するコードは次のとおりです。\n\n```\n1. spark\n2. .readStream\n3. .format(\"kafka\")\n4. .option(\"kafka.bootstrap.servers\", \"host1:port1,host2:port2\")\n5. ._____________\n6. .load()\n```\n\nこのKafkaトピックを購読するには、5行目にどのコード片を追加すべきですか？",
     "options": [
-      "subscribeオプションにfeedを指定する",
-      "subscribe.topicオプションにfeedを指定する",
-      "kafka.topicオプションにfeedを指定する",
-      "topicオプションにfeedを指定する"
+      ".option(\"subscribe\", \"feed\")",
+      ".option(\"subscribe.topic\", \"feed\")",
+      ".option(\"kafka.topic\", \"feed\")",
+      ".option(\"topic\", \"feed\")"
     ],
     "explanation": "Kafkaソースでトピック名を購読する設定はsubscribeです。接続先を指定するkafka.bootstrap.serversと、購読対象の指定を区別します。",
     "reasons": [
@@ -1001,12 +1001,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-063": {
-    "stem": "大きなJSONデータを、事前に定義したスキーマで読み込む最適な方法はどれですか。",
+    "stem": "データエンジニアは、分散ファイルシステムに保存された注文情報を含む大規模なJSONデータセットを扱っています。分析のために、このデータセットをSpark DataFrameに読み込む必要があります。スキーマを明示的に定義し、効率よくデータを読み込みたいと考えています。\n\n事前定義したスキーマを使用してJSONデータをSpark DataFrameに効率よく読み込むには、どの方法を使用すべきですか？",
     "options": [
-      "読み込み後にprintSchemaし、DataFrame全体をcastする",
-      "inferSchemaをtrueにして型を推論する",
-      "JSONを読み込んだ後、各列をwithColumnで型変換する",
-      "StructTypeでスキーマを定義し、read.schema(...).json(...)で読む"
+      "`spark.read.json()`で読み込み、`DataFrame.printSchema()`で推論されたスキーマを確認した後、`DataFrame.cast()`で列のデータ型を調整する。",
+      "`spark.read.json()`を使用し、`inferSchema`オプションを`true`に設定する。",
+      "`spark.read.format(\"json\").load()`で読み込んだ後、`DataFrame.withColumn()`を適用し、各列を必要なデータ型にキャストする。",
+      "`StructType`でスキーマを定義し、`spark.read.schema(predefinedSchema).json()`でデータを読み込む。"
     ],
     "explanation": "型が決まっている場合は読み取り時にスキーマを渡します。型推論のための追加走査を避け、列の型も明示できます。",
     "reasons": [
@@ -1017,12 +1017,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-064": {
-    "stem": "transaction_id、account_number、amount、timestampを持つ取引データから、全列が同じ重複行だけを除去する方法はどれですか。",
+    "stem": "金融サービス会社のデータサイエンティストは、数百万件の取引レコードを含むSpark DataFrameを扱っています。列はtransaction_id、account_number、transaction_amount、timestampです。データ元のシステムの問題により、すべてのフィールドの値が同一の取引が複数回記録されています。正確な財務報告を行うため、重複行を削除する必要があります。\n\nすべての列に基づいてレコードの重複を削除するには、どのPySparkの方法を使用すべきですか？",
     "options": [
-      "引数なしのdropDuplicates()",
-      "transaction_idで集約し、他の列はfirstで取得する",
-      "transaction_idがnullでない行に絞る",
-      "transaction_amountだけを指定してdropDuplicatesする"
+      "```\ndf = df.dropDuplicates()\n```",
+      "```\ndf = df.groupBy(\"transaction_id\").agg(\n    F.first(\"account_number\"),\n    F.first(\"transaction_amount\"),\n    F.first(\"timestamp\")\n)\n```",
+      "```\ndf = df.filter(F.col(\"transaction_id\").isNotNull())\n```",
+      "```\ndf = df.dropDuplicates([\"transaction_amount\"])\n```"
     ],
     "explanation": "全列一致の重複を除くならdropDuplicates()を引数なしで使います。キーを指定すると、その列だけが同じ別の取引までまとめる可能性があります。",
     "reasons": [
@@ -1033,12 +1033,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-065": {
-    "stem": "値に3.14159を掛けるPython UDFを作ります。浮動小数点の結果を正しく返せる定義を2つ選んでください。",
+    "stem": "次のコード片を実行するとエラーになります。\n\n```\n@F.udf(T.IntegerType())\ndef simple_udf(t: str) -> str:\n    return answer * 3.14159\n```\n\nUDFを正しく定義するには、代わりにどのコードを使用すべきですか？",
     "options": [
-      "Sparkの戻り値をIntegerType、Python関数をint→intとして定義する",
-      "Sparkの戻り値をDoubleType、Python関数をfloat→floatとして定義する",
-      "Sparkの戻り値をDoubleType、Python関数をint→intとして定義する",
-      "Sparkの戻り値をIntegerType、Python関数をfloat→floatとして定義する"
+      "```\n@F.udf(T.IntegerType())\ndef simple_udf(t: int) -> int:\n    return t * 3.14159\n```",
+      "```\n@F.udf(T.DoubleType())\ndef simple_udf(t: float) -> float:\n    return t * 3.14159\n```",
+      "```\n@F.udf(T.DoubleType())\ndef simple_udf(t: int) -> int:\n    return t * 3.14159\n```",
+      "```\n@F.udf(T.IntegerType())\ndef simple_udf(t: float) -> float:\n    return t * 3.14159\n```"
     ],
     "explanation": "計算結果はPythonのfloatなので、Spark側の戻り値もDoubleTypeにします。Pythonの型注釈は実行時の強制変換ではないため、注釈がintでも実際の戻り値がfloatならDoubleTypeと整合します。",
     "reasons": [
@@ -1049,12 +1049,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-066": {
-    "stem": "同じ実行コンテキストでSparkSession.builderのgetOrCreate()を呼ぶと、既存のSparkSessionはどう扱われますか。",
+    "stem": "開発者は、次のコードでSparkSessionを初期化します。\n\n```\nspark = SparkSession.builder \\\n    .appName(\"Analytics Application\") \\\n    .getOrCreate()\n```\n\nこのコードで作成されるSparkSessionの動作を正しく説明しているのはどれですか？",
     "options": [
-      "既存セッションを破棄して作り直す",
-      "appNameごとに必ず別のセッションを作る",
-      "利用可能な既存セッションがあれば返す",
-      "呼び出すたびに新しいセッションを作る"
+      "`getOrCreate()`メソッドは、既存のSparkSessionを明示的に破棄してから、新しいものを作成する。",
+      "SparkSessionは`appName`ごとに一意であり、同じ名前で`getOrCreate()`を呼び出すと、以前作成されたSparkSessionが返される。",
+      "SparkSessionがすでに存在する場合、このコードは新しいセッションを作成せず、既存のセッションを返す。",
+      "`getOrCreate()`メソッドを呼び出すたびに、新しいSparkSessionが作成される。"
     ],
     "explanation": "getOrCreateは、既存の利用可能なセッションを取得し、なければ作成します。appNameを指定しても、それだけで別セッションが保証されるわけではありません。",
     "reasons": [
@@ -1065,12 +1065,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-067": {
-    "stem": "Sparkアプリケーションをclusterデプロイモードで実行する特徴として、最も適切なものはどれですか。",
+    "stem": "Sparkエンジニアは、Sparkジョブを実行するための適切なデプロイモードを選択する必要があります。\n\nApache Sparkでクラスターモードを使用する主な利点は何ですか？",
     "options": [
-      "リソースマネージャーによる資源割り当てだけがclusterモードで可能になる",
-      "ドライバーが全タスクをローカルで実行する",
-      "ドライバーが送信元クライアント上で動く",
-      "ドライバーがクラスター内のノード上で動く"
+      "クラスターモードでは、クラスター内のリソースマネージャーによってリソースが割り当てられ、大規模ワークロードの性能と拡張性が向上する。",
+      "クラスターモードでは、DriverがWorkerノードにタスクを分散せず、すべてのタスクをローカルで実行する。",
+      "クラスターモードではDriverがクライアントマシン上で動作するため、アプリケーションが大規模データセットを効率よく処理する能力が制限される可能性がある。",
+      "クラスターモードではDriverプログラムがWorkerノードの1つで動作し、アプリケーションがクラスターの分散リソースを十分に利用できる。"
     ],
     "explanation": "clientとclusterの違いは、主にドライバーの実行場所です。clusterモードではドライバーもクラスター側に配置されます。",
     "reasons": [
@@ -1081,12 +1081,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-068": {
-    "stem": "実行中のSparkアプリケーションで、エグゼキューターのログを調べる適切な方法はどれですか。",
+    "stem": "エンジニアは、Sparkジョブの実行時間が大幅に増加したことに気付きました。原因を調べるため、Executorが生成したログを確認することにしました。\n\nSparkアプリケーションの性能問題を調査するには、どのようにExecutorログを取得すべきですか？",
     "options": [
-      "マスターノードの/tmpだけを確認する",
-      "spark-submit --verboseで全エグゼキューターログを表示する",
-      "Spark UIの関連ステージやエグゼキューターからログリンクを確認する",
-      "Spark SQL CLIからエグゼキューターログを取得する"
+      "Sparkのマスターノード上でExecutorログを探す。通常は/tmpディレクトリにある。",
+      "`spark-submit`コマンドに`--verbose`フラグを付けてジョブを実行し、Executorログをコンソールに出力する。",
+      "Spark UIを開き、該当ステージに移動し、StagesタブからExecutorログを表示する。",
+      "spark-sql CLIツールでSparkジョブを実行してログを取得する。"
     ],
     "explanation": "Spark UIからタスクの失敗とエグゼキューターをたどり、stdoutやstderrなどを確認します。実際のリンクの提供方法は、クラスターのログ設定によります。",
     "reasons": [
@@ -1097,12 +1097,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-069": {
-    "stem": "128GBのAと1GBのBを等価結合します。Bはドライバーと各エグゼキューターのメモリに収まり、ブロードキャストの制約も満たします。最も適切な戦略と主な利点はどれですか。",
+    "stem": "データエンジニアは、次の2つのDataFrameを使用するSparkアプリケーションを扱っています。\n\n- DataFrame A：過去1年間の詳細な取引レコードを含み、サイズは128 GB。\n- DataFrame B：ユーザーのルックアップテーブルを含み、サイズは1 GB。\n\n性能を最適化するため、ブロードキャスト結合を使用する予定です。DriverとすべてのExecutorにはDataFrame Bを保持する十分なメモリがあり、ブロードキャストのサイズ制限も満たしているものとします。\n\nどちらのDataFrameをブロードキャストするかを決める際、どの方針を採用すべきですか？",
     "options": [
-      "Bをブロードキャストし、Bのシャッフルを避ける",
-      "Bをブロードキャストし、大きいAのシャッフルを避ける",
-      "Aをブロードキャストし、Bのシャッフルを避ける",
-      "Aのほうが小さいためAをブロードキャストする"
+      "DataFrame Bの方が小さく、ブロードキャストされるDataFrame自体のシャッフルを避けられるため、Bをブロードキャストする。",
+      "DataFrame Bの方が小さく、結合中のDataFrame Aのシャッフルを避けられるため、Bをブロードキャストする。",
+      "DataFrame Aの方が大きく、DataFrame Bのシャッフルを避けられるため、Aをブロードキャストする。",
+      "DataFrame Aの方が小さく、ブロードキャストされるDataFrame自体のシャッフルを避けられるため、Aをブロードキャストする。"
     ],
     "explanation": "小さいBを各エグゼキューターへ配布すれば、大きいAを結合キーで再分配する負担を避けられます。ブロードキャストも通信を伴うため、通信がゼロになるという意味ではありません。",
     "reasons": [
@@ -1113,12 +1113,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-070": {
-    "stem": "最初の処理でシャッフルが起こり、その後の処理では通常シャッフルしない組み合わせはどれですか。",
+    "stem": "データサイエンティストは、PySparkを使用してApache Sparkで大規模データセットを扱っています。DataFrame dfには、user_id、product_id、purchase_amountという列があります。一連の操作を適用するにあたり、最初にシャッフルが発生し、その後にシャッフル不要の変換を行う操作の組み合わせを検討しています。\n\nこのパターンに当てはまる操作の並びはどれですか？",
     "options": [
-      "user_idでgroupByして購入額を合計し、その合計が100超の行をfilterする",
-      "割引額をwithColumnで追加し、その列をselectする",
-      "購入日をwithColumnで追加し、未定義の合計額で絞る",
-      "groupByで集約した後にrepartition(10)する"
+      "df.groupBy(\"user_id\").agg(sum(\"purchase_amount\").alias(\"total_purchase\")).filter(col(\"total_purchase\") > 100)",
+      "df.withColumn(\"discount\", df.purchase_amount * 0.1).select(\"discount\")",
+      "df.withColumn(\"purchase_date\", current_date()).where(\"total_purchase > 50\")",
+      "df.groupBy(\"user_id\").agg(sum(\"purchase_amount\").alias(\"total_purchase\")).repartition(10)"
     ],
     "explanation": "キー別の集約には同じキーのデータを集めるシャッフルが必要です。その結果に対するfilterは、各パーティション内で行えます。",
     "reasons": [
@@ -1129,12 +1129,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-071": {
-    "stem": "センサーのストリームを、重ならない5分単位のイベント時刻ウィンドウで集計し、センサーごとの平均を継続計算する方法はどれですか。",
+    "stem": "データエンジニアは、sensor_id、temperature、timestampという列を持ち、毎秒センサー測定値を受け取るストリーミングDataFrameを処理しています。ストリームを継続的に処理しながら、重なりのない固定長5分のイベント時刻ウィンドウごとに、各センサーの平均温度を計算する必要があります。\n\nこの要件を正しく満たすコードはどれですか？",
     "options": [
-      "分析関数のWindow.rangeBetween(-300,0)を使う",
-      "センサーと個々のタイムスタンプでgroupByする",
-      "センサーだけでgroupByする",
-      "withWatermarkを設定し、センサーとwindow(timestamp,'5 minutes')でgroupByして平均を求める"
+      "```\ndf.withColumn(\"avg_temp\",\n    avg(\"temperature\").over(\n        Window.partitionBy(\"sensor_id\")\n        .orderBy(\"timestamp\")\n        .rangeBetween(-300, 0)\n    )\n)\n```",
+      "```\ndf.groupBy(\"sensor_id\", \"timestamp\") \\\n  .agg(avg(\"temperature\").alias(\"avg_temp\"))\n```",
+      "```\ndf.groupBy(\"sensor_id\").avg(\"temperature\")\n```",
+      "```\ndf.withWatermark(\"timestamp\", \"5 minutes\") \\\n  .groupBy(\"sensor_id\", window(\"timestamp\", \"5 minutes\")) \\\n  .agg(avg(\"temperature\").alias(\"avg_temp\"))\n```"
     ],
     "explanation": "時刻を一定幅に区切る集計には、groupByのキーにwindowを使います。watermarkは遅延データと状態の保持に関する設定で、5分の集計幅そのものはwindowで指定します。",
     "reasons": [
@@ -1145,12 +1145,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-072": {
-    "stem": "Spark Connectの対応機能について、正しい説明はどれですか。",
+    "stem": "Spark Connectの機能について、正しい説明はどれですか？",
     "options": [
-      "DataStreamReader、DataStreamWriter、StreamingQueryを使うStructured Streamingに対応する",
-      "DataFrame、Functions、Column、SparkContextのすべてに対応する",
-      "PySparkからしか利用できない",
-      "認証が標準で一式組み込まれている"
+      "ストリーミングAPIの`DataStreamReader`、`DataStreamWriter`、`StreamingQuery`をサポートする。",
+      "PySpark APIの`DataFrame`、`Functions`、`Column`、`SparkContext`をサポートする。",
+      "PySparkで書かれたアプリケーションのみをサポートする。",
+      "追加設定なしで利用できる組み込みの認証機能を提供する。"
     ],
     "explanation": "Spark ConnectはDataFrameベースのリモート実行を提供し、Structured Streamingにも対応します。SparkContextやRDDを直接操作する従来の低水準APIとは分けて覚えます。",
     "reasons": [
@@ -1161,12 +1161,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-073": {
-    "stem": "数百万行あるデータをブロードキャスト側に指定した場合、起こり得る問題はどれですか。",
+    "stem": "データエンジニアは、ルックアップのため、数百万行を含む小さい側のDataFrameの行をブロードキャスト結合ですべてのExecutorに配布します。\n\nこの方法では、どのような結果になる可能性がありますか？",
     "options": [
-      "各エグゼキューターのメモリに収まらず失敗する",
-      "行数と同じだけCPUコアが必要になる",
-      "データをシリアライズできず必ず停止する",
-      "ドライバーのCPUコア数だけを理由に必ず失敗する"
+      "ブロードキャストされたDataFrameを保持するためのメモリが各Executorで不足すると、ジョブが失敗する可能性がある。",
+      "ブロードキャストされたデータセットを処理するCPUコアがExecutorに十分なければ、ジョブが失敗する可能性がある。",
+      "Sparkはこれほど大きなブロードキャスト変数を配布またはシリアライズできないため、ジョブは無期限に停止したままになる。",
+      "大きなDataFrameをシリアライズするCPUコアがDriverに十分ないため、ジョブが失敗する可能性がある。"
     ],
     "explanation": "ブロードキャスト側は各エグゼキューターに複製されるため、実データのサイズとメモリ使用量が重要です。行数だけで可否は決まりません。",
     "reasons": [
@@ -1177,12 +1177,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-074": {
-    "stem": "Spark Connectの基本的な役割を正しく説明するものはどれですか。",
+    "stem": "Spark Connectを使ってSparkクラスターとリモートでやり取りするアプリケーションを設計する際、Spark Connectのどの特徴を考慮すべきですか？",
     "options": [
-      "どの言語からでも無条件に実行できる仕組み",
-      "RESTだけで任意のクラスターを操作する仕組み",
-      "クライアントとサーバーを分離し、リモートでSpark処理を実行する仕組み",
-      "主にデータを取り込むための機能"
+      "任意のプログラミング言語を使ってSparkアプリケーションをリモート実行する仕組みを提供する。",
+      "REST APIを通じて、任意のリモートクラスターとやり取りできる。",
+      "クライアント・サーバー構成を通じてSparkジョブをリモート実行できる。",
+      "主に、外部データソースからSparkにデータを取り込むために設計されている。"
     ],
     "explanation": "Spark Connectではクライアントが処理計画を送り、サーバー側のSparkが実行します。通信にはgRPCを用い、クライアントとSparkの実行環境を分離します。",
     "reasons": [
@@ -1193,12 +1193,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-075": {
-    "stem": "CSVに bambi,hello と alladin,20 の2行があります。nameをStringType、ageをIntegerTypeと明示して、既定のPERMISSIVEモードで読むとどうなりますか。",
+    "stem": "CSVファイルに次のレコードが含まれています。\n\n```\nbambi, hello\nalladin, 20\n```\n\n次のコードを考えます。\n\n```\nfrom pyspark.sql.types import *\nschema = StructType([StructField(\"name\", StringType()), StructField(\"age\", IntegerType())])\nspark.read.schema(schema).csv(path).collect()\n```\n\nこのコードを実行すると、何が返されますか？",
     "options": [
-      "bambiの行からageフィールド自体がなくなり、alladinのageは20になる",
-      "alladinの行だけが残る",
-      "bambiのageはnull、alladinのageは20になる",
-      "読み込みがエラーで終了する"
+      "[Row(name='bambi'), Row(name='alladin', age=20)]",
+      "[Row(name='alladin', age=20)]",
+      "[Row(name='bambi', age=None), Row(name='alladin', age=20)]",
+      "CSVデータが定義されたスキーマに一致しないため、コードはエラーで失敗する。"
     ],
     "explanation": "PERMISSIVEでは、整数に変換できないhelloはage列のnullになります。スキーマは共通なので、行ごとにage列そのものが消えるわけではありません。",
     "reasons": [
@@ -1209,12 +1209,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-076": {
-    "stem": "approx_percentileで25・50・75パーセンタイルを求めています。accuracy=1000では速度は十分ですが精度が足りません。適切な変更はどれですか。",
+    "stem": "データエンジニアは、特徴量エンジニアリングのジョブが時間とともに遅くなっているという問題に対応しています。データサイエンスチームと相談し、精度を多少犠牲にして性能を改善するため、Sparkの`percentile()`関数を`approx_percentile()`に置き換えることに合意しました。\n\n更新後のコードは次のとおりです。\n\n```\nfeatures_df = raw_df \\\n.select(\n    F.approx_percentile(\n        \"price\",\n        percentage=[0.25, 0.5, 0.75],\n        accuracy=1000\n    ).alias(\"price_perc\")\n)\n```\n\nこの変更で実行時間は大幅に改善しましたが、返されるパーセンタイル値が実際の値から大きくずれすぎていることにデータサイエンティストが気付きました。\n\nこの問題を解決するには、データエンジニアは何を変更すべきですか？",
     "options": [
-      "最初のパーセンタイル値を小さくする",
-      "accuracyを下げてメモリを減らし、精度も上げる",
-      "最後のパーセンタイル値を大きくする",
-      "accuracyを上げ、より多くのメモリを使って精度を高める"
+      "`percentage`パラメーターの最初の値を小さくし、パーセンタイル範囲の精度を上げる。",
+      "`accuracy`パラメーターの値を小さくし、メモリ使用量を減らしながら精度を改善する。",
+      "`percentage`パラメーターの最後の値を大きくし、パーセンタイル範囲の精度を上げる。",
+      "`accuracy`パラメーターの値を大きくし、メモリをより多く使う代わりに、算出されるパーセンタイルの精度を改善する。"
     ],
     "explanation": "求める分位点と近似精度は別の指定です。accuracyを大きくすると相対誤差の上限は小さくなりますが、メモリの使用量が増えます。",
     "reasons": [
@@ -1225,12 +1225,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-077": {
-    "stem": "Kafkaのデータを低遅延で継続処理し、exactly-onceを保ちたいとします。チェックポイントと対応する出力先は構成済みです。適切なトリガーはどれですか。",
+    "stem": "データエンジニアは、Kafkaトピックからデータを読み込むStructured Streamingパイプラインを構築しています。非常に低いレイテンシで動作させながら、Exactly-Onceの処理保証も維持したいと考えています。\n\nチェックポイントと、Exactly-Onceの復旧をサポートする出力先が設定済みであるものとします。`writeStream`の設定では、どのトリガーモードを使用すべきですか？",
     "options": [
-      "processingTime='1 second'",
-      "continuous=True",
-      "continuous='1 second'",
-      "availableNow=True"
+      ".trigger(processingTime='1 second')",
+      ".trigger(continuous=True)",
+      ".trigger(continuous='1 second')",
+      ".trigger(availableNow=True)"
     ],
     "explanation": "Structured Streamingのマイクロバッチ処理は、対応するソース・シンクとチェックポイントの条件のもとでexactly-onceを実現します。continuous処理の保証はat-least-onceです。",
     "reasons": [
@@ -1241,12 +1241,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-078": {
-    "stem": "DataFrameをfinanceという新しい管理テーブルとして保存します。同名のテーブルがあれば既存データを変更せずエラーにしたい場合、どれを使いますか。",
+    "stem": "データエンジニアは、財務データを含む新しい管理テーブルを作成するSparkジョブを書く必要があります。テーブルがすでに存在する場合、既存データを一切変更せず、ジョブを直ちに失敗させなければなりません。\n\nどの保存モードとメソッドを使用すべきですか？",
     "options": [
-      "ErrorIfExistsモードでsaveAsTable('finance')",
-      "OverwriteモードでsaveAsTable('finance')",
-      "Ignoreモードでsaveする",
-      "ErrorIfExistsモードでsave('finance')"
+      "`saveAsTable`を`ErrorIfExists`モードで使用する。",
+      "`saveAsTable`を`Overwrite`モードで使用する。",
+      "`save`を`Ignore`モードで使用する。",
+      "`save`を`ErrorIfExists`モードで使用する。"
     ],
     "explanation": "テーブル名として登録するにはsaveAsTableを使います。同名テーブルがあるときに失敗させる指定はerrorまたはerrorifexistsです。",
     "reasons": [
@@ -1257,12 +1257,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-079": {
-    "stem": "Spark 3.0以降のAdaptive Query Executionを有効にしたときの機能として、適切なものはどれですか。",
+    "stem": "データエンジニアはSparkアプリケーションをSpark 3.0からSpark 3.5に更新し、いくつかの定期実行ジョブが速くなったことに気付きました。さらに調べると、Adaptive Query Execution（AQE）が有効になっていることが分かりました。\n\nSparkアプリケーションの性能を改善するため、AQEが自動的に実行する操作はどれですか？",
     "options": [
-      "実行時の統計に基づいて結合戦略を変更する",
-      "カタログの統計を自動で永続化する",
-      "単一ステージのすべての処理を無条件に高速化する",
-      "Deltaファイルを物理的に最適化する"
+      "クエリの実行中に結合戦略を動的に切り替える。",
+      "永続的なテーブル統計を収集し、後で使えるようメタストアに保存する。",
+      "単一ステージのSparkジョブの実行性能を改善する。",
+      "ディスク上に保存されたDeltaファイルの物理配置を最適化する。"
     ],
     "explanation": "AQEは実行中に得た統計を使って物理計画を調整します。代表例は結合方式の変更、シャッフルパーティションの結合、偏りのある結合への対処です。",
     "reasons": [
@@ -1273,12 +1273,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-080": {
-    "stem": "Structured Streamingの結果をParquet形式の指定パスへ書きます。writeStreamの空欄に入る正しい設定はどれですか。",
+    "stem": "データエンジニアは、Streaming DataFrameをParquetファイルに書き込む必要があります。\n\nコードのひな型は次のとおりです。\n\n```\ndf\n.writeStream\n// -- insert code here --\n.option(\"checkpointLocation\", \"path/to/checkpoint/dir\")\n.start()\n```\n\nストリーミング出力をParquetファイルとして正しく書き込むには、どのコード片を挿入すべきですか？",
     "options": [
-      "format('parquet')とoption('location',出力先)",
-      "format('format','parquet')とoption('destination',出力先)",
-      "format('format','parquet')とoption('location',出力先)",
-      "format('parquet')とoption('path',出力先)"
+      ".format(\"parquet\")\n.option(\"location\", \"path/to/destination/dir\")",
+      ".format(\"format\", \"parquet\")\n.option(\"destination\", \"path/to/destination/dir\")",
+      ".format(\"format\", \"parquet\")\n.option(\"location\", \"path/to/destination/dir\")",
+      ".format(\"parquet\")\n.option(\"path\", \"path/to/destination/dir\")"
     ],
     "explanation": "ファイルシンクの形式はformat('parquet')、出力先はpathで指定します。checkpointLocationは復旧用の保存先で、出力データのpathとは役割が異なります。",
     "reasons": [
@@ -1289,12 +1289,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-081": {
-    "stem": "10GBと8MBのCSV由来DataFrameを等価結合します。小さい側の推定サイズは8MB、autoBroadcastJoinThresholdは10MBです。想定される結合はどれですか。",
+    "stem": "データエンジニアは、df1とdf2という2つのDataFrameを結合するため、次のコードを書きます。\n\n```\ndf1 = spark.read.option(\"header\", True).csv(\"sales_data.csv\")\ndf2 = spark.read.option(\"header\", True).csv(\"product_data.csv\")\nresult = df1.join(df2, df1.product_id == df2.product_id)\n```\n\ndf1は電子商取引の売上データを含み、サイズは約10 GBです。df2は商品参照データを含み、サイズは約8 MBです。\n\nSparkがdf2のサイズを8 MBと推定し、この結合はブロードキャストが可能な等価結合で、spark.sql.autoBroadcastJoinThresholdは10 MBであるものとします。この状況でApache Sparkが採用する可能性が最も高い結合戦略はどれですか？",
     "options": [
-      "AQEが無効なので必ずシャッフル結合になる",
-      "小さい側が閾値未満なのでブロードキャスト結合が候補になる",
-      "サイズの差が大きすぎるためシャッフル結合になる",
-      "ヒントがないため必ずシャッフル結合になる"
+      "Adaptive Query Execution（AQE）が有効でなく、Sparkが静的な実行計画に依存するため、シャッフル結合が使用される。",
+      "df2がデフォルトのブロードキャストしきい値より小さいため、ブロードキャスト結合が使用される。",
+      "df1とdf2のサイズの差が大きすぎて効率的にブロードキャスト結合できないため、シャッフル結合が選ばれる。",
+      "ブロードキャストヒントを明示的に指定していないため、シャッフル結合が行われる。"
     ],
     "explanation": "自動ブロードキャストの閾値と推定サイズを比較します。対応する結合条件なら、小さい側が閾値以下であることによりヒントなしでもブロードキャストが選ばれ得ます。",
     "reasons": [
@@ -1305,12 +1305,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-082": {
-    "stem": "record_datetime列と、構造体の配列record列があります。配列の各要素を行に展開し、sensor_id・status・healthを個別の列にする方法はどれですか。",
+    "stem": "データアナリストは`sensor_df`を扱っています。このDataFrameには、タイムスタンプ列の`record_datetime`と、配列列の`record`という2つの列があります。\n\n`record`配列の各要素を別々の行に展開し、さらに各配列要素の中のフィールドを個別の列として選択したDataFrameを返すコードはどれですか？",
     "options": [
-      "recordをexplodeした後、元の最上位にsensor_idなどがあるものとしてselectする",
-      "recordをcolで参照し、そのまま内部フィールドを取り出す",
-      "recordをexplodeし、生成した構造体列のsensor_id・status・healthをselectする",
-      "recordをexplodeした後、構造体全体を1列のままselectする"
+      "```\nexploded_df = sensor_df.withColumn(\"record_exploded\", explode(\"record\"))\n \nexploded_df = exploded_df.select(\n    \"record_datetime\",\n    \"sensor_id\",\n    \"status\",\n    \"health\"\n)\n```",
+      "```\nexploded_df = sensor_df.withColumn(\"record_exploded\", col(\"record\"))\n \nexploded_df = exploded_df.select(\n    \"record_datetime\",\n    \"record_exploded.sensor_id\",\n    \"record_exploded.status\",\n    \"record_exploded.health\"\n)\n```",
+      "```\nexploded_df = sensor_df.withColumn(\"record_exploded\", explode(\"record\"))\n \nexploded_df = exploded_df.select(\n    \"record_datetime\",\n    \"record_exploded.sensor_id\",\n    \"record_exploded.status\",\n    \"record_exploded.health\"\n)\n```",
+      "```\nexploded_df = sensor_df.withColumn(\"record_exploded\", explode(\"record\"))\n \nexploded_df = exploded_df.select(\n    \"record_datetime\",\n    \"record_exploded\"\n)\n```"
     ],
     "explanation": "配列を行へ展開するexplodeと、構造体からフィールドを取り出す操作を組み合わせます。フィールドは展開後の構造体列を経由して参照します。",
     "reasons": [
@@ -1321,13 +1321,13 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-083": {
-    "stem": "稼働中のローカルSpark Connectサーバーへ、アプリケーションのコードを変えずに接続する方法を2つ選んでください。",
+    "stem": "開発者は、既存のSparkアプリケーションでSpark Connectを試したいと考えています。既存のアプリケーションコードを一切変更せず、すでに動作しているローカルのSpark Connectサーバーに接続することを希望しています。\n\nこの状況でローカルのSpark Connectサーバーに接続できる方法はどれですか？（2つ選択）",
     "options": [
-      "起動引数の--remoteにhttps://localhostを指定する",
-      "起動引数の--remoteにsc://localhostを指定する",
-      "環境変数SPARK_REMOTEにsc://localhostを設定する",
-      "コード内でSparkSession.builder.remote(...)を追加する",
-      "サーバーのバインドポートだけを設定する"
+      "`--remote \"https://localhost\"`オプションを付けて`pyspark`シェルを起動する。",
+      "`--remote \"sc://localhost\"`オプションを付けて`pyspark`シェルを起動する。",
+      "`pyspark`シェルを起動する前に、環境変数`SPARK_REMOTE=\"sc://localhost\"`を設定する。",
+      "`SparkSession.builder`の設定に`.remote(\"sc://localhost\")`を追加して、アプリケーションコードを変更する。",
+      "アプリケーションコード内で、Spark設定プロパティ`spark.connect.grpc.binding.port`を`15002`に設定する。"
     ],
     "explanation": "Connectの接続先はsc://形式です。コードを変更しない条件では、起動引数--remoteまたは環境変数SPARK_REMOTEで接続先を指定します。",
     "reasons": [
@@ -1339,12 +1339,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-084": {
-    "stem": "clientモードのドライバーがメモリ不足です。クライアントの増強はできませんが、クラスターには十分な資源があります。適切な対策はどれですか。",
+    "stem": "クライアントモードで動作するSparkアプリケーションで、Driverプロセスがリソース不足に制約され、性能問題が発生しています。\n\nクライアントマシンは増強できませんが、クラスターノードにはDriverに十分なリソースがあります。解決する最もよい方法はどれですか？",
     "options": [
-      "エグゼキューターの数だけを増やす",
-      "同じクライアントのメモリを増やす",
-      "clusterモードへ切り替え、ドライバーをクラスター側で動かす",
-      "localモードへ切り替える"
+      "クラスターのExecutorインスタンス数を増やす。",
+      "クライアントマシンのDriverメモリを増やす。",
+      "デプロイモードをクラスターモードに切り替える。",
+      "デプロイモードをローカルモードに切り替える。"
     ],
     "explanation": "ドライバーの問題はエグゼキューターを増やすだけでは解消しません。clusterモードなら、資源のあるクラスター側にドライバーを配置できます。",
     "reasons": [
@@ -1355,12 +1355,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-085": {
-    "stem": "従業員DataFrameからtenureが5以上の行を抽出し、その結果を画面に表示するコードはどれですか。",
+    "stem": "データアナリストはemployees_dfというDataFrameを扱っており、勤続5年以上の従業員を表彰するため、該当する従業員を取得したいと考えています。\n\nこの条件を満たす従業員にDataFrameを正しく絞り込み、表示するコードはどれですか？",
     "options": [
-      "filterで条件を指定し、show()を呼ぶ",
-      "whereで条件を指定するだけ",
-      "DataFrameに適用せずfilterへ列の条件だけを渡す",
-      "filterで条件を指定し、collect()を呼ぶ"
+      "employees_df.filter(employees_df.tenure >= 5).show()",
+      "employees_df.where(employees_df.tenure >= 5)",
+      "filter(employees_df.tenure >= 5)",
+      "employees_df.filter(employees_df.tenure >= 5).collect()"
     ],
     "explanation": "filterとwhereは条件に合うDataFrameを作る変換です。表として画面に表示するには、アクションのshowを呼びます。",
     "reasons": [
@@ -1371,12 +1371,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-086": {
-    "stem": "同じevent_idの重複イベントは、タイムスタンプの差が最大30分です。31分のwatermarkを指定してdropDuplicatesWithinWatermark(['event_id'])を使う説明として、正しいものはどれですか。",
+    "stem": "データエンジニアは、上流のストリーミングソースがイベントテーブルに重複レコードを頻繁に送っていることに気付きました。本番データを確認した結果、重複レコード間の`event_timestamp`列の時刻差は最大30分であることが分かりました。\n\nevent_idがイベントを識別するものとし、次のコードを追加します。\n\n```\nevents.withWatermark(\"event_timestamp\", \"31 minutes\").dropDuplicatesWithinWatermark([\"event_id\"])\n```\n\nこの変更の結果はどうなりますか？",
     "options": [
-      "この重複除去APIは対応していない",
-      "31分が最大差30分より長いため、watermarkの保証範囲で重複を除去できる",
-      "すべての過去データについて永久に重複を除去できる",
-      "watermarkは秒単位しか指定できない"
+      "この状況では、このメソッドで重複を削除できない。",
+      "設定したウォーターマークの範囲内でevent_idの重複を削除する。31分の遅延設定は、時刻差の最大値である30分を上回っている。",
+      "到着時刻にかかわらず、すべての重複レコードを削除する。",
+      "ウォーターマークは秒単位で指定しなければならないため、コードはエラーになる。"
     ],
     "explanation": "dropDuplicatesWithinWatermarkでは、重複イベント間の時刻差より長い遅延閾値を選びます。状態は無期限に保持されないため、全期間に対する重複排除とは区別します。",
     "reasons": [
@@ -1387,12 +1387,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-087": {
-    "stem": "文字列の長さを求めるPython UDFについて、有効な定義・登録方法はどれですか。",
+    "stem": "Spark DataFrame内の文字列の長さを計算するUDFの実装はどれですか？",
     "options": [
-      "withcolumn内でspark.udf(...)を直接呼ぶ",
-      "length(col(...))からalias(...)を減算する",
-      "spark.udf.register('computeLength', lambda s: len(s))で登録する",
-      "withcolumnへ、引数の列に適用していないUDFをそのまま渡す"
+      "`productsDF.withcolumn(\"nameLength\", spark.udf(\"len\", StringType()))`",
+      "`productsDF.select(length(col(\"productName\"))-alias(\"nameLength\"))`",
+      "`spark.udf.register(\"computeLength\", lambda s: len(s))`",
+      "`productsDF.withcolumn(\"nameLength\", udf(lambda s: len(s), StringType()))`"
     ],
     "explanation": "spark.udf.registerはPython関数をSQLから呼べるUDFとして登録します。登録しただけではDataFrameに列は追加されません。実用では戻り値をIntegerTypeで明示すると意図が伝わります。",
     "reasons": [
@@ -1403,12 +1403,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-088": {
-    "stem": "次のDataFrame操作のうち、一般にシャッフルを伴うものはどれですか。",
+    "stem": "Sparkアプリケーションの開発者は、大規模な分散データセットに複数の変換を行うジョブの性能を評価しています。どの操作がデータのシャッフルを発生させ、Sparkの実行計画に新しいステージ境界を作るのかを調べたいと考えています。\n\nシャッフルを発生させ、新しいステージを生じさせる操作はどれですか？",
     "options": [
-      "groupByして集約する",
-      "filterで行を絞る",
-      "withColumnで列を追加する",
-      "selectで列を選ぶ"
+      "DataFrame.groupBy().agg()",
+      "DataFrame.filter()",
+      "DataFrame.withColumn()",
+      "DataFrame.select()"
     ],
     "explanation": "キー別の集約では、別のパーティションにある同じキーのデータを集める必要があります。filterや通常の列計算は、各パーティション内で処理できます。",
     "reasons": [
@@ -1419,12 +1419,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-089": {
-    "stem": "数値の処理時間が入ったRDDがあります。全体の最大値を計算し、ドライバーへ返す適切な方法はどれですか。",
+    "stem": "Spark開発者は、クラスター全体のタスク実行性能を監視するアプリケーションを構築しています。要件の1つは、すでに記録されているタスク処理時間の全体での最大値を計算し、Driverでさらに分析することです。数値の処理時間はすでにRDDに格納されています。稼働中のSpark UIのメトリクスの収集は、この問題の対象外です。\n\nこれを実現するには、どの方法を使用すべきですか？",
     "options": [
-      "RDD.reduceでmaxを適用する",
-      "アキュムレーターで最大値を自動収集する",
-      "最大値をブロードキャスト変数として共有する",
-      "Spark UIにRDD全体の最大値を自動計算させる"
+      "`reduce()`などのRDDアクションを使って処理時間の最大値を計算する。",
+      "アキュムレーターを使用して最大時間を取得し、Driverに報告する。",
+      "変数をブロードキャストし、Workerが処理時間の最大値を共有できるようにする。",
+      "処理時間の最大値を自動収集するようにSpark UIを設定する。"
     ],
     "explanation": "reduceは各パーティションの結果を結合して、1つの値を返すアクションです。maxは結合順序に依存せず使えるため、RDD全体の最大値を求められます。",
     "reasons": [
@@ -1435,12 +1435,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-090": {
-    "stem": "互換性のある異なるスキーマを持つ複数のParquetファイルを読み、すべての列を含めたい場合、適切な方法はどれですか。",
+    "stem": "Sparkアプリケーションは、同じディレクトリ内の複数のParquetファイルを読み込む必要があります。各ファイルのスキーマは異なりますが、互換性があります。データエンジニアは、すべてのファイルに存在する列を漏れなく含むDataFrameを作成したいと考えています。\n\nすべての列を結果のDataFrameに統合しながらParquetファイルを読み込むには、Apache Sparkでどのコードを使用すべきですか？",
     "options": [
-      "read.option('mergeSchema','true').parquet(...)",
-      "mergeAllColumns()を呼ぶ",
-      "schema('merge')を指定する",
-      "既定設定で読めば必ず全列が統合される"
+      "df = spark.read.option(\"mergeSchema\", \"true\").parquet(\"/data/parquet_files\")",
+      "df = spark.read.parquet(\"/data/parquet_files\").mergeAllColumns()",
+      "df = spark.read.schema(\"merge\").parquet(\"/data/parquet_files\")",
+      "df = spark.read.format(\"parquet\").load(\"/data/parquet_files\")"
     ],
     "explanation": "Parquetのスキーマ統合はmergeSchemaで有効にします。すべての列を含む共通スキーマを作れますが、追加のスキーマ確認コストがかかります。",
     "reasons": [
@@ -1451,12 +1451,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-091": {
-    "stem": "Arrow関連の設定がまだ指定されていないとします。pandasとPySparkのDataFrame間の変換をApache Arrowで最適化できる設定を2つ選んでください。",
+    "stem": "Arrowに関する設定はまだ何も行われていないものとします。Apache Arrowを使ってPandas DataFrameとPySpark DataFrameの相互変換を最適化するには、どのSpark設定を有効にできますか？",
     "options": [
-      "spark.pandas.arrow.enabledをtrueにする",
-      "spark.sql.execution.arrow.pyspark.enabledをtrueにする",
-      "spark.sql.execution.arrow.enabledをtrueにする",
-      "spark.sql.arrow.pandas.enabledをtrueにする"
+      "spark.conf.set(\"spark.pandas.arrow.enabled\", \"true\")",
+      "spark.conf.set(\"spark.sql.execution.arrow.pyspark.enabled\", \"true\")",
+      "spark.conf.set(\"spark.sql.execution.arrow.enabled\", \"true\")",
+      "spark.conf.set(\"spark.sql.arrow.pandas.enabled\", \"true\")"
     ],
     "explanation": "現在推奨される設定はarrow.pyspark.enabledです。これが未指定なら、旧設定arrow.enabledもフォールバックとして作用するため、この設問では両方が正解です。",
     "reasons": [
@@ -1467,12 +1467,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-092": {
-    "stem": "1TBのデータを、16コア×10ノードのクラスターで処理しています。タスク数がコア数より大幅に少なく、入力パーティションが大きく、一部でディスクへの退避も見られます。データ量を基に、実測で調整するための初期パーティション数を見積もる方法はどれですか。",
+    "stem": "データエンジニアは、S3やADLSなどの分散ストレージシステムに保存された1 TBのデータを処理するSparkジョブを実行しています。Sparkクラスターは10ノードで構成され、各ノードには16個のCPUコアがあります。Spark UIを確認すると、次のことが分かりました。\n\n- Executorsページでは、Active Tasksの数が利用可能なコアの総数より大幅に少ない。\n- Stagesページでは、少数のタスクがそれぞれ大きな入力パーティションを読み込み、一部のタスクでディスクへのスピルが発生している。\n- Jobsページでは、タスク総数が利用可能なCPU数より大幅に少ない。\n\n固定数やCPU数だけで決めた値が常に最適だと仮定せず、データ量に基づく初期パーティション数を見積もり、測定と調整を始める方法はどれですか？",
     "options": [
-      "総CPUコア数と同じ数に固定する",
-      "どのジョブでも200に固定する",
-      "ノード数と同じ10にする",
-      "データ量を128MBなどの目安のパーティションサイズで割る"
+      "並列処理を最大限に行うため、パーティション数をクラスター全体のCPU数と同じに設定する。",
+      "異なるジョブ間で一貫性を保つため、200などの固定のパーティション数を設定する。",
+      "ノード間で均等にデータを分配するため、パーティション数をクラスターノード数と同じに設定する。",
+      "データセットのサイズ（1 TB）を128 MBなどの適切なパーティションサイズで割り、パーティション数を決める。"
     ],
     "explanation": "まずデータ量÷目標サイズで数を見積もり、タスク時間・spill・並列度を実測して調整します。128MBやコア数だけで最適値が決まるわけではありません。",
     "reasons": [
@@ -1483,12 +1483,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-093": {
-    "stem": "AQEが有効で、結合はshuffled hash joinを利用可能です。シャッフル後の全パーティションがmaxShuffledHashJoinLocalMapThreshold未満で、この閾値はadvisoryPartitionSizeInBytes以上です。AQEが選ぶ結合方式はどれですか。",
+    "stem": "開発者は、データセット内のシャッフル後のすべてのパーティションが、`spark.sql.adaptive.maxShuffledHashJoinLocalMapThreshold`に設定したしきい値より小さいことを確認しました。\n\nAQEが有効で、この結合にはシャッフルハッシュ結合を適用でき、上記しきい値はspark.sql.adaptive.advisoryPartitionSizeInBytes以上であるものとします。この状況でAdaptive Query Execution（AQE）は、どの結合戦略を選択しますか？",
     "options": [
-      "直積結合",
-      "シャッフルハッシュ結合",
-      "ブロードキャストネストループ結合",
-      "ソートマージ結合"
+      "直積結合。",
+      "シャッフルハッシュ結合。",
+      "ブロードキャストネステッドループ結合。",
+      "ソートマージ結合。"
     ],
     "explanation": "各シャッフルパーティションが局所的なハッシュ表に収まる条件を満たすと、AQEはshuffled hash joinを優先できます。総データサイズと、各パーティションのサイズを区別します。",
     "reasons": [
@@ -1499,12 +1499,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-094": {
-    "stem": "大きなpandas API on SparkのDataFrameを通常のpandas DataFrameへ変換するとき、考慮すべきリスクはどれですか。",
+    "stem": "大きなPandas API on SparkのDataFrameをPandas DataFrameに戻す際、どのリスクを考慮すべきですか？",
     "options": [
-      "データが自動的にワーカーノードへ分散する",
-      "1000行を超えると必ず失敗する",
-      "変換中に一部のレコードが自動で失われる",
-      "全データがドライバーのメモリに集まり、メモリ不足になり得る"
+      "変換によってデータセットが自動的にWorkerノードへ分散される。",
+      "変換後のPandas DataFrameが1000行を超えると処理が失敗する。",
+      "変換中に一部のレコードが失われる可能性がある。",
+      "すべてのデータがDriverのメモリに集められるため、大きなデータセットではメモリ不足になる可能性がある。"
     ],
     "explanation": "通常のpandasは単一マシンのメモリ上で扱います。to_pandasは分散データをドライバーへ集めるため、行数よりも結果全体のメモリサイズに注意します。",
     "reasons": [
@@ -1515,12 +1515,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-095": {
-    "stem": "大きなデータをSQLで処理していますが、各ステージのタスクが少なく、十分な資源があるのにエグゼキューターが遊んでいます。改善策として適切なものはどれですか。",
+    "stem": "開発者は、SQLクエリで大規模データセットを処理するSparkアプリケーションを構築しています。クラスターには十分なリソースがありますが、実行時間の大部分でExecutorがアイドル状態になっています。ログを見ると各ステージのタスク数が少なく、クラスターの利用率が低くなっています。\n\nクラスターの利用率を改善するには、何をすべきですか？",
     "options": [
-      "spark.sql.shuffle.partitionsを増やす",
-      "spark.sql.shuffle.partitionsを減らす",
-      "処理するデータ量そのものを増やす",
-      "動的リソース割り当てだけを有効にする"
+      "`spark.sql.shuffle.partitions`の値を増やす。",
+      "`spark.sql.shuffle.partitions`の値を減らす。",
+      "より多くのパーティションが作られるよう、データセットのサイズを大きくする。",
+      "動的リソース割り当てを有効にし、クラスターリソースを自動的に増減させる。"
     ],
     "explanation": "シャッフル後のパーティションが少ないと、並列に動けるタスクも少なくなります。shuffle.partitionsの増加を検討し、AQEによるパーティション結合後の数も確認します。",
     "reasons": [
@@ -1531,12 +1531,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-096": {
-    "stem": "ワーカーが10台、各16コア・64GB RAMです。各ノードに4個のエグゼキューターを配置し、それぞれ4コアを割り当てると、アプリケーションに割り当てられるCPUコア数の合計はいくつですか。",
+    "stem": "データエンジニアは、次のリソースを持つSparkクラスターでバッチ処理ジョブを実行します。\n\n- Workerノード：10台\n- 各WorkerノードのCPUコア：16個\n- 各ノードのRAM：64 GB\n\n各ノードで4個のExecutorを実行し、各Executorが4個のCPUコアを使用するようにアプリケーションを設定します。\n\nこのアプリケーションが使用するCPUコアの総数はいくつですか？",
     "options": [
-      "160コア",
-      "64コア",
-      "80コア",
-      "40コア"
+      "160",
+      "64",
+      "80",
+      "40"
     ],
     "explanation": "10ノード×各4エグゼキューター×各4コア=160コアです。割り当て可能なコア数と、実際に常時稼働するタスク数は別です。",
     "reasons": [
@@ -1547,12 +1547,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-097": {
-    "stem": "JSONイベントを継続処理するStructured Streamingで、障害時に進捗情報を使って復旧できるようにしたいとします。チェックポイントを正しく設定するコードはどれですか。",
+    "stem": "データエンジニアは、継続的に流れてくるJSONイベントをリアルタイムで処理するApache Spark Structured Streamingアプリケーションを開発しています。障害が起きても、最後に正常に処理されたレコードからストリーム処理を再開できるよう、耐障害性を持たせたいと考えています。この動作を実現するため、チェックポイントを設定する予定です。\n\nストリーミングクエリのチェックポイントを正しく有効にするコードはどれですか？",
     "options": [
-      "writeStreamにcheckpointオプションを設定する",
-      "writeStreamにcheckpointLocationオプションを設定する",
-      "completeモードだけを指定し、保存先を設定しない",
-      "appendモードだけを指定し、保存先を設定しない"
+      "query = streaming_df.writeStream\n.format(\"console\")\n.option(\"checkpoint\", \"/path/to/checkpoint\")\n.outputMode(\"append\")\n.start()",
+      "query = streaming_df.writeStream\n.format(\"console\")\n.outputMode(\"append\")\n.option(\"checkpointLocation\", \"/path/to/checkpoint\")\n.start()",
+      "query = streaming_df.writeStream\n.format(\"console\")\n.outputMode(\"complete\")\n.start()",
+      "query = streaming_df.writeStream\n.format(\"console\")\n.outputMode(\"append\")\n.start()"
     ],
     "explanation": "復旧用の進捗や状態を保存するキーはcheckpointLocationです。出力モードの指定だけでは、永続的なチェックポイントの代わりにはなりません。",
     "reasons": [
@@ -1563,12 +1563,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-098": {
-    "stem": "Spark SQLのdate_sub(start, days)でdaysに負数を渡すと、どうなりますか。",
+    "stem": "Spark SQL関数`date_sub(start, days)`の`days`引数に負の値を渡すと、どうなりますか？",
     "options": [
-      "開始日がそのまま返る",
-      "不正な引数としてエラーになる",
-      "負数の絶対値に相当する日数だけ開始日から先に進む",
-      "負数の絶対値に相当する日数だけ開始日から前に戻る"
+      "元の開始日が変更されずに返される。",
+      "パラメーター値が無効であることを示すエラーが発生する。",
+      "指定した日数分が開始日に加算される。",
+      "指定した日数分が開始日から減算される。"
     ],
     "explanation": "date_subは開始日からdaysを引きます。たとえばdate_sub(日付,-3)は「マイナス3日を引く」ため、3日後の日付になります。",
     "reasons": [
@@ -1579,12 +1579,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-099": {
-    "stem": "毎日Parquetテーブルを上書きします。出力は1パーティションにし、その中をmarket_time順にする必要があります。適切なコードはどれですか。後でテーブルを読む結果の順序は、別途ORDER BYで保証するものとします。",
+    "stem": "データエンジニアは、最新のデータセットで毎日上書きするParquetテーブルを生成する必要があります。下流システムには、出力パーティションを1つにし、その行を`market_time`順に並べて書き込むという厳密な要件があります。後でテーブルをクエリする際、結果の順序を保証するには引き続きORDER BYが必要です。\n\nテーブルを毎日上書きしながら、レコードを`market_time`順に並べてParquetテーブルに書き込むコードはどれですか？",
     "options": [
-      "sortしてからoverwriteで保存する",
-      "orderByしてからoverwriteで保存する",
-      "coalesce(1)してからsortし、overwriteで保存する",
-      "sortWithinPartitionsしてからoverwriteで保存する"
+      "final_df\n.sort(\"market_time\")\n.write\n.format(\"parquet\")\n.mode(\"overwrite\")\n.saveAsTable(\"output.market_events\")",
+      "final_df\n.orderBy(\"market_time\")\n.write\n.format(\"parquet\")\n.mode(\"overwrite\")\n.saveAsTable(\"output.market_events\")",
+      "final_df\n.coalesce(1)\n.sort(\"market_time\")\n.write\n.format(\"parquet\")\n.mode(\"overwrite\")\n.saveAsTable(\"output.market_events\")",
+      "final_df\n.sortWithinPartitions(\"market_time\")\n.write\n.format(\"parquet\")\n.mode(\"overwrite\")\n.saveAsTable(\"output.market_events\")"
     ],
     "explanation": "この設問には「1パーティションで出力」という条件があります。coalesce(1)でまとめてからsortします。保存時の並び順が、後のSELECTの結果順まで保証するわけではありません。",
     "reasons": [
@@ -1595,12 +1595,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-100": {
-    "stem": "df1はemployee_idとname、df2はemp_idとdepartmentを持ちます。df1.join(df2, df1.employee_id == df2.emp_id, how='inner')はどう動きますか。",
+    "stem": "エンジニアは、df1とdf2という2つのDataFrameを、それぞれemployee_id列とemp_id列を使って結合する必要があります。\n\n```\n• df1 schema: employee_id INT, name STRING\n• df2 schema: emp_id INT, department STRING\n```\n\n次のコードで結合を行います。\n\n`result = df1.join(df2, df1.employee_id == df2.emp_id, how=\"inner\")`\n\nこのコードはどのように動作しますか？",
     "options": [
-      "結合する列名が異なるため失敗する",
-      "on='employee_id'を明示していないため失敗する",
-      "スキーマが異なるDataFrame同士なので失敗する",
-      "列同士の比較条件を明示しているため、正常に内部結合する"
+      "employee_idとemp_idという列名は自動では一致しないため、コードは失敗する。",
+      "結合では`on='employee_id'`を明示的に指定しなければならないため、コードは失敗する。",
+      "PySparkでは異なるスキーマのDataFrame同士を結合できないため、コードは失敗する。",
+      "結合条件でdf1のemployee_idとdf2のemp_idを明示的に比較しているため、コードは正常に実行される。"
     ],
     "explanation": "列名が違っていても、Column式で左右の列を比較すれば結合できます。共通の列名を文字列で指定する書き方だけがjoinの方法ではありません。",
     "reasons": [
@@ -1611,12 +1611,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-101": {
-    "stem": "name・age・salary列を持つdfを、ageは昇順、同じage内ではsalaryは降順に並べるコードはどれですか。",
+    "stem": "DataFrame dfにはname、age、salaryという列があります。開発者はageを昇順、salaryを降順としてDataFrameを並べ替える必要があります。\n\nこの要件を満たすコードはどれですか？",
     "options": [
-      "age.asc()とsalary.asc()でorderByする",
-      "ageとsalaryをascending=[True,True]でsortする",
-      "ageとsalaryをascending=[False,True]でsortする",
-      "ageとsalaryをascending=[True,False]でorderByする"
+      "df.orderBy(col(\"age\").asc(), col(\"salary\").asc()).show()",
+      "df.sort(\"age\", \"salary\", ascending=[True, True]).show()",
+      "df.sort(\"age\", \"salary\", ascending=[False, True]).show()",
+      "df.orderBy(\"age\", \"salary\", ascending=[True, False]).show()"
     ],
     "explanation": "ascendingのリストは、指定した列の順番に対応します。ageはTrueで昇順、salaryはFalseで降順です。",
     "reasons": [
@@ -1627,12 +1627,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-102": {
-    "stem": "spark.sparkContext.setLogLevel(...)に指定できる有効なログレベルだけを並べた組み合わせはどれですか。",
+    "stem": "次のSparkコードを考えます。\n\n`spark.sparkContext.setLogLevel(\"<log_level>\")`\n\nSpark Driverのログレベルに指定できる有効な値の組み合わせはどれですか？",
     "options": [
-      "ALL・DEBUG・FAIL・INFO",
-      "ERROR・WARN・TRACE・OFF",
-      "WARN・NONE・ERROR・FATAL",
-      "FATAL・NONE・INFO・DEBUG"
+      "ALL, DEBUG, FAIL, INFO",
+      "ERROR, WARN, TRACE, OFF",
+      "WARN, NONE, ERROR, FATAL",
+      "FATAL, NONE, INFO, DEBUG"
     ],
     "explanation": "ERROR・WARN・TRACE・OFFはすべて有効です。似ている英単語でも、FAILやNONEはsetLogLevelで使うレベル名ではありません。",
     "reasons": [
@@ -1643,12 +1643,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-103": {
-    "stem": "DataFrameに複数の変換を定義し、最後にcollect()を呼ぶSparkスクリプトがあります。実行の階層として適切な説明はどれですか。",
+    "stem": "データサイエンティストは大規模なデータセットを扱っており、DataFrameに複数の変換とアクションを行うPySparkスクリプトを書きました。スクリプトの最後ではcollect()アクションを実行して結果をDriverに取得します。\n\nスクリプトの実行時、Apache Sparkはこれらの操作をどのような実行階層で処理しますか？",
     "options": [
-      "スクリプトが複数アプリケーションに分割され、それぞれジョブ・ステージ・タスクになる",
-      "スクリプト全体が必ず1ジョブになる",
-      "collectが計算を要求し、ジョブはシャッフル境界でステージに分かれ、各パーティションをタスクが処理する",
-      "変換やアクション1個につき必ずタスク1個が作られる"
+      "スクリプトは最初に複数のアプリケーションに分割され、各アプリケーションがジョブ、ステージ、最後にタスクへと分割される。",
+      "スクリプト全体が1つのジョブとして実行され、そのジョブは複数のステージに分割される。各ステージは、データのパーティションに応じてさらにタスクに分割される。",
+      "collect()アクションがジョブを起動し、そのジョブはシャッフル境界でステージに分割される。各ステージは、個々のデータパーティションを処理するタスクにさらに分割される。",
+      "Sparkは変換とアクションごとに1つのタスクを作成し、依存関係に基づいて、それらのタスクをステージとジョブにまとめる。"
     ],
     "explanation": "覚える順番はアプリケーション→ジョブ→ステージ→タスクです。アクションが計算を要求し、ステージ内では複数パーティションをタスクで並列処理します。",
     "reasons": [
@@ -1659,12 +1659,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-104": {
-    "stem": "user_idごとのグループ全体とキーを、pandas DataFrameを扱う独自Python関数へ渡し、指定スキーマのDataFrameを返したい場合、どの方法が適切ですか。",
+    "stem": "開発者は、Webアプリケーションに由来し、すでにSpark DataFrame dfに読み込まれているユーザー行動データを分析しています。Apache Spark 3.5のすべてのWorkerでgroupBy処理を並列実行したいと考えています。\n\n各ユーザーの完全なグループを、そのキーとともに、pandas DataFrameを処理する独自のPython関数へ渡し、指定されたスキーマのDataFrameを返す方法はどれですか？",
     "options": [
-      "groupBy(...).applyInPandasでキーとグループのpandas DataFrameを関数へ渡す",
-      "mapInPandasで各バッチ内だけをgroupByする",
-      "Sparkの組み込みmeanを通常のaggで呼ぶ",
-      "列のSeriesを受け取って平均のスカラーを返すpandas UDFをaggで使う"
+      "applyInPandas APIを使用する：\n\n```\nimport pandas as pd\n \ndef mean_func(key, pdf):\n    return pd.DataFrame([(key + (pdf['value'].mean(),))])\n \ndf.groupby('user_id').applyInPandas(mean_func, schema=\"user_id long, value double\").show()\n```",
+      "mapInPandas APIを使用する：\n\n```\ndef mean_func(pdf_iter):\n    for pdf in pdf_iter:\n        yield pdf.groupby('user_id').agg({'value': 'mean'}).reset_index()\n \ndf.mapInPandas(mean_func, schema=\"user_id long, value double\").show()\n```",
+      "標準のSpark UDF（ユーザー定義関数）を使用する：\n\n```\nfrom pyspark.sql.functions import mean\ndf.groupBy('user_id').agg(mean('value')).show()\n```",
+      "Pandas UDFを定義する：\n\n```\nfrom pyspark.sql.functions import pandas_udf\n \n@pandas_udf(\"double\")\ndef mean_func(value: pd.Series) -> float:\n    return value.mean()\n \ndf.groupby(\"user_id\").agg(mean_func(df['value'])).show()\n```"
     ],
     "explanation": "グループ全体をpandas DataFrameとして独自関数へ渡すのはapplyInPandasです。mapInPandasのバッチ単位処理や、Seriesを受け取る集約UDFとは入力と戻り値が異なります。",
     "reasons": [
@@ -1675,10 +1675,10 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-105": {
-    "stem": "10パーティションあるdfにdf.coalesce(20)を適用すると、結果のパーティション数はいくつですか。",
+    "stem": "現在10個のパーティションを持つDataFrame dfについて、次のコードを考えます。\n\n`result = df.coalesce(20)`\n\nこの文を実行した後、結果のDataFrameのパーティション数はいくつになりますか？",
     "options": [
       "10",
-      "エグゼキューター数と同じ",
+      "クラスターのExecutor数と同じになる。",
       "1",
       "20"
     ],
@@ -1691,7 +1691,7 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-106": {
-    "stem": "DataFrameにfilter・select・groupBy・coalesceを使います。通常、集約時にシャッフルを伴うのはどれですか。",
+    "stem": "データアナリストは財務データを分析するSparkアプリケーションを開発し、DataFrameにfilter、select、groupBy、coalesceという変換を行います。\n\nこれらのうち、実行時にシャッフルを発生させる操作はどれですか？",
     "options": [
       "groupBy",
       "filter",
@@ -1707,12 +1707,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-107": {
-    "stem": "df_userから個人情報列first_name・last_name・email・birthdateを取り除き、新しいdf_user_non_piiを作るコードはどれですか。",
+    "stem": "電子商取引会社のデータサイエンティストは、df_userというDataFrameに格納された加入者情報を扱っています。以降の処理を進める前に、個人識別情報（PII）ではない列だけを含む、df_user_non_piiという別のDataFrameを作成したいと考えています。\n\ndf_user内のPII列はfirst_name、last_name、email、birthdateです。\n\nこれらの列を取り除いたdf_user_non_piiを作成するには、どのコードを使用すべきですか？",
     "options": [
-      "dropに4つの列名をそれぞれ文字列で渡す",
-      "dropでfirst_nameだけを文字列にし、残りは未定義の変数として渡す",
-      "DataFrameのdropfieldsに4つの列名を渡す",
-      "dropfieldsに4つの列名を連結した1つの文字列を渡す"
+      "df_user_non_pii = df_user.drop(\"first_name\", \"last_name\", \"email\", \"birthdate\")",
+      "df_user_non_pii = df_user.drop(\"first_name\", last_name, email, birthdate)",
+      "df_user_non_pii = df_user.dropfields(\"first_name\", \"last_name\", \"email\", \"birthdate\")",
+      "df_user_non_pii = df_user.dropfields(\"first_name, last_name, email, birthdate\")"
     ],
     "explanation": "最上位の列を削除するDataFrameのAPIはdropです。列名をそれぞれ文字列で指定すると、元のDataFrameを変更せず、対象列のない新しいDataFrameが返ります。",
     "reasons": [
@@ -1723,12 +1723,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-108": {
-    "stem": "Spark DataFrameのcache()とpersist()の違いはどれですか。",
+    "stem": "Spark DataFrameで使用するdf.cache()とdf.persist()の違いは何ですか？",
     "options": [
-      "どちらもcacheの呼び出しで任意のストレージレベルを指定できる",
-      "persistの既定はDISK_ONLYなので必ずcacheより速い",
-      "persistが既定レベルを使い、cacheが任意のレベルを指定できる",
-      "cacheは既定のMEMORY_AND_DISK_DESERを使い、persistは別のレベルも指定できる"
+      "`cache()`と`persist()`は、どちらもデフォルトのストレージレベル（MEMORY_AND_DISK_DESER）を設定するために使用できる。",
+      "どちらも同じ操作を行う。ただし、`persist()`のデフォルトのストレージレベルはDISK_ONLYなので、より高い性能が得られる。",
+      "`persist()`はデフォルトのストレージレベル（MEMORY_AND_DISK_DESER）でDataFrameを永続化し、`cache()`では永続化に使用するストレージレベルを指定できる。",
+      "`cache()`はデフォルトのストレージレベル（MEMORY_AND_DISK_DESER）でDataFrameを永続化し、`persist()`では永続化に使用するストレージレベルを指定できる。"
     ],
     "explanation": "DataFrame.cache()は既定の保存レベルを使う簡単な指定です。persist(StorageLevel...)は保存レベルを選べます。RDDのcacheの既定値と混同しないようにします。",
     "reasons": [
@@ -1739,12 +1739,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-109": {
-    "stem": "SparkドライバーのログにGC overhead limit exceededが繰り返し出て、メモリ不足で失敗します。提示された対策のうち適切なものはどれですか。",
+    "stem": "Sparkエンジニアは、実行中にメモリ不足エラーで繰り返し失敗するSparkアプリケーションを調査しています。Spark Driverのログを確認すると、「GC overhead limit exceeded」というメッセージが複数見つかりました。\n\nこの問題に対処するため、何をすべきですか？",
     "options": [
-      "DataFrameをrepartitionするだけで対処する",
-      "ガベージコレクションを無効にする",
-      "ドライバーに割り当てるメモリを増やす",
-      "大きなDataFrameをさらにメモリへキャッシュする"
+      "DataFrameを再パーティション分割し、データ処理のロジックを改善する。",
+      "Sparkの設定を変更し、ガベージコレクションを無効にする。",
+      "Spark Driverに割り当てるメモリ量を増やす。",
+      "大きなDataFrameをキャッシュし、メモリ内に保持する。"
     ],
     "explanation": "どのプロセスでメモリ不足かを見ます。この設問はドライバーなので、ドライバーメモリの増量が候補です。実務ではcollectなどで集めるデータ量も減らせないか確認します。",
     "reasons": [
@@ -1755,12 +1755,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-110": {
-    "stem": "/file/test_data.orcからcol1とcol2だけを使い、不要な列の読み取りを抑えたい場合、有効なコードを2つ選んでください。",
+    "stem": "エンジニアは/file/test_data.orcに保存された大きなORCファイルを扱っています。処理中のメモリ使用量を最小限にするため、特定の列（例えばcol1とcol2）だけを読み取りたいと考えています。\n\nORCファイルを読み込む際、必要な列を正しく選択するコードはどれですか？",
     "options": [
-      "col1='value'で行を絞り、col2だけselectする",
-      "read.format('orc')の直後、load前にselectする",
-      "read.orc(...)でDataFrameを作り、col1とcol2をselectする",
-      "read.format('orc').load(...)でDataFrameを作り、col1とcol2をselectする"
+      "spark.read.orc(\"/file/test_data.orc\").filter(\"col1 = 'value'\").select(\"col2\")",
+      "spark.read.format(\"orc\").select(\"col1\", \"col2\").load(\"/file/test_data.orc\")",
+      "spark.read.orc(\"/file/test_data.orc\").select(\"col1\", \"col2\")",
+      "spark.read.format(\"orc\").load(\"/file/test_data.orc\").select(\"col1\", \"col2\")"
     ],
     "explanation": "read.orcとformat('orc').loadは、どちらもDataFrameを返します。その後のselectにより、最適化で不要な列の読み取りを省く列プルーニングが可能です。",
     "reasons": [
@@ -1771,13 +1771,13 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-111": {
-    "stem": "DataFrameの変換を定義しても、すぐに処理が始まりません。この動作を説明する特徴を2つ選んでください。",
+    "stem": "データエンジニアは、DataFrameに複数の変換を行うSparkアプリケーションを確認していますが、変換を定義してもジョブが直ちには実行されないことに気付きました。\n\nこの動作を説明するApache Sparkの実行モデルの特徴はどれですか？（2つ選択）",
     "options": [
-      "変換を実行するには手作業でエンジンを起動する必要がある",
-      "アクションが変換パイプラインの実行を要求する",
-      "変換は依存関係を作るため即座に実行される",
-      "変換のたびに計画最適化が終わるまで処理を遅らせる",
-      "変換は遅延評価される"
+      "Sparkエンジンが変換の実行を開始するには、手動の操作が必要である。",
+      "変換パイプラインの実行を引き起こすのはアクションだけである。",
+      "変換は、リネージグラフを構築するために直ちに実行される。",
+      "Sparkエンジンが変換中に実行計画を最適化するため、実行が遅れる。",
+      "変換は遅延評価される。"
     ],
     "explanation": "変換では処理の計画を組み立て、結果が必要になるアクションで計算を実行します。『遅いから始まらない』のではなく、遅延評価という実行モデルです。",
     "reasons": [
@@ -1789,12 +1789,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-112": {
-    "stem": "Structured Streamingを障害や計画停止の後に、以前の進捗を使って再開できるようにする方法はどれですか。",
+    "stem": "データエンジニアはStructured Streamingパイプラインを開発しています。障害や計画停止から復旧する際、以前停止した時点から処理を継続できるようにしたいと考えています。\n\nApache Sparkで、この動作をどのように実装できますか？",
     "options": [
-      "readStreamにcheckpointLocationを設定する",
-      "SparkSessionにrecoveryLocationを設定する",
-      "writeStreamにrecoveryLocationを設定する",
-      "writeStreamにcheckpointLocationを設定する"
+      "`readStream`でcheckpointLocationオプションを設定する。",
+      "SparkSessionの初期化時にrecoveryLocationオプションを設定する。",
+      "`writeStream`でrecoveryLocationオプションを設定する。",
+      "`writeStream`でcheckpointLocationオプションを設定する。"
     ],
     "explanation": "ストリーミングクエリの出力側でcheckpointLocationを指定します。再開時も同じ適切なチェックポイントを使うことで、オフセットや状態の復旧に利用できます。",
     "reasons": [
@@ -1805,13 +1805,13 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-113": {
-    "stem": "storesDFのmanagerName列を大文字へ変換し、同じ列名で置き換える有効なコードを2つ選んでください。変数として定義済みなのはstoresDFだけで、必要な関数は利用できるものとします。",
+    "stem": "DataFrame storesDFの既存のmanagerName列を大文字に変換し、その結果をmanagerName列に格納した新しいDataFrameを返すコードはどれですか？ 定義済みの変数はstoresDFだけであるものとします。",
     "options": [
-      "upper(managerName)をwithColumnへ渡す",
-      "toupper(col('managerName'))を渡す",
-      "upper(col('managerName'))を渡す",
-      "col('managerName').upper()を渡す",
-      "upper('managerName')を渡す"
+      "storesDF.withColumn(\"managerName\", upper(managerName))",
+      "storesDF.withColumn(\"managerName\", toupper(col(\"managerName\")))",
+      "storesDF.withColumn(\"managerName\", upper(col(\"managerName\")))",
+      "storesDF.withColumn(\"managerName\", col(\"managerName\").upper())",
+      "storesDF.withColumn(\"managerName\", upper(\"managerName\"))"
     ],
     "explanation": "upperはColumn式と列名文字列のどちらも受け付けます。文字列を渡したときは、文字列そのものを大文字にするのではなく、指定名の列に関数を適用します。",
     "reasons": [
@@ -1823,13 +1823,13 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-114": {
-    "stem": "Python関数assessPerformanceからUDFを作り、storesDFのcustomerSatisfaction列に適用します。戻り値型は明示せず、既定のStringTypeを使う場合の空欄の組み合わせはどれですか。",
+    "stem": "次のコードは、Python関数`assessPerformance()`から`assessPerformanceUDF`というPython UDFを作成し、DataFrame `storesDF`の`customerSatisfaction`列に適用することを目的としています。\n\n戻り値の型を明示的には指定せず、UDFのデフォルトの戻り値の型（StringType）を使用して、番号付きの空欄を埋めてください。\n\nコード：\n\n```\nassessPerformanceUDF = _1_(_2_)\nstoresDF.withColumn(\"result\", _3_(_4_))\n```\n\n",
     "options": [
-      "udfに関数とIntegerType()を渡し、作ったUDFを対象列へ適用する",
-      "udfに関数だけを渡し、作ったUDFをcol('customerSatisfaction')へ適用する",
-      "spark.register.udfを使い、元の関数を対象列へ適用する",
-      "spark.register.udfに関数とIntegerType()を渡す",
-      "spark.register.udfに関数を渡し、作ったUDFを列名へ適用する"
+      "udf\n\nassessPerformance, IntegerType()\n\nassessPerformanceUDF\n\ncol(\"customerSatisfaction\")",
+      "udf\n\nassessPerformance\n\nassessPerformanceUDF\n\ncol(\"customerSatisfaction\")",
+      "spark.register.udf\n\nassessPerformanceUDF\n\nassessPerformance\n\ncol(\"customerSatisfaction\")",
+      "spark.register.udf\n\nassessPerformance, IntegerType()\n\nassessPerformanceUDF\n\ncol(\"customerSatisfaction\")",
+      "spark.register.udf\n\nassessPerformance\n\nassessPerformanceUDF\n\n\"customerSatisfaction\""
     ],
     "explanation": "udf(関数)でUDFを作り、その戻り値を列へ適用します。戻り値型を省略した場合はStringTypeです。IntegerTypeを明示する選択肢は設問の条件に合いません。",
     "reasons": [
@@ -1841,12 +1841,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-115": {
-    "stem": "DataFrameをMEMORY_AND_DISKレベルで永続化しましたが、全体はメモリに収まりません。想定される動作はどれですか。",
+    "stem": "Spark DataFrame dfはMEMORY_AND_DISKストレージレベルでキャッシュされていますが、データセット全体はメモリに収まりません。\n\nDataFrameのキャッシュ中にメモリが不足すると、Sparkはどのように動作しますか？",
     "options": [
-      "全データをメモリとディスクへ二重保存し、入らなければ全体をディスクだけに置く",
-      "必ず半分ずつメモリとディスクに置く",
-      "メモリに収まる分を保持し、残りのパーティションをディスクに置く",
-      "利用頻度の高い行だけをメモリへ自動分類する"
+      "SparkはDataFrameの複製をメモリとディスクの両方に保存する。メモリに収まらない場合は、DataFrame全体をディスクだけに保存し、そこからアクセスする。",
+      "ストレージ使用量のバランスを保つため、SparkはDataFrameをメモリとディスクに均等に分ける。",
+      "Sparkは可能な限りDataFrameをメモリに保存し、残りのパーティションをディスクに退避する。多少の性能上の負担を伴いながら、処理は継続する。",
+      "性能のバランスを取るため、Sparkはアクセス頻度の高い行をメモリに、低い行をディスクに保存する。"
     ],
     "explanation": "MEMORY_AND_DISKは、メモリに保持できないパーティションをディスクへ保存します。行ごとの利用頻度で自動分類する仕組みではありません。",
     "reasons": [
@@ -1857,12 +1857,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-116": {
-    "stem": "storesDFをfilePathへJSON形式で保存し、既存データがあれば上書きするコードはどれですか。",
+    "stem": "DataFrame storesDFをJSON形式でfilePathに書き込み、その場所に既存データがあれば上書きするコードはどれですか？",
     "options": [
-      "writeを関数として呼び、source='json'を渡す",
-      "write.mode('overwrite').json(filePath)を使う",
-      "write.mode('overwrite').path(filePath)を使う",
-      "write.option('json','overwrite').path(filePath)を使う"
+      "storesDF.write(filePath, mode=\"overwrite\", source=\"json\")",
+      "storesDF.write.mode(\"overwrite\").json(filePath)",
+      "storesDF.write.mode(\"overwrite\").path(filePath)",
+      "storesDF.write.option(\"json\", \"overwrite\").path(filePath)"
     ],
     "explanation": "writeでWriterを取得し、modeで既存時の動作、jsonで出力形式とパスを指定します。APIの役割を順にたどると選べます。",
     "reasons": [
@@ -1873,13 +1873,13 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-117": {
-    "stem": "storesDFを左側にし、storeId列でemployeesDFと左外部結合するコードはどれですか。",
+    "stem": "storeId列を使ってstoresDFとemployeesDFを左結合した、新しいDataFrameを返すコードはどれですか？",
     "options": [
-      "join(employeesDF,'left',col('storeId'))",
-      "join(employeesDF,'storeId')",
-      "join(employeesDF,'storeId','left')",
-      "merge(employeesDF,'left',col('storeId'))",
-      "join(employeesDF,'left',storesDF.storeId == employeesDF.storeId)"
+      "storesDF.join(employeesDF, \"left\", col(\"storeId\"))",
+      "storesDF.join(employeesDF, \"storeId\")",
+      "storesDF.join(employeesDF, \"storeId\", \"left\")",
+      "storesDF.merge(employeesDF, \"left\", col(\"storeId\"))",
+      "storesDF.join(employeesDF, \"left\", storesDF.storeId == employeesDF.storeId)"
     ],
     "explanation": "joinの基本形はjoin(相手, 条件または列名, 結合の種類)です。leftを指定すると、右側に一致がなくても左側の行を残します。",
     "reasons": [
@@ -1891,13 +1891,13 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-118": {
-    "stem": "storesDFはStringTypeの列を1つだけ持ち、filePathはまだ存在しません。テキストファイルとして保存するコードはどれですか。",
+    "stem": "storesDFにはStringTypeの列がちょうど1つだけあり、filePathはまだ存在しないものとします。\n\nDataFrame storesDFをテキストファイルとしてfilePathに書き込むコードはどれですか？",
     "options": [
       "storesDF.write(filePath)",
       "storesDF.write.path(filePath)",
       "storesDF.write().text(filePath)",
       "storesDF.write.text(filePath)",
-      "storesDF.write.option('text').path(filePath)"
+      "storesDF.write.option(\"text\").path(filePath)"
     ],
     "explanation": "writeはプロパティでWriterを取得し、text(path)でテキスト形式に保存します。テキスト出力には、文字列型の列が1つという条件が必要です。",
     "reasons": [
@@ -1909,13 +1909,13 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-119": {
-    "stem": "事前定義済みのスキーマ変数schemaでCSVを読みたいのに、spark.read.schema('schema').csv(filePath)と書きました。誤りはどれですか。",
+    "stem": "次のコードには誤りがあります。このコードは、事前定義されたスキーマschemaを使って、filePathのCSVファイルをDataFrameに読み込むことを目的としています。\n\nコード：\n\n```\nspark.read.schema(\"schema\").csv(filePath)\n```\n\nこのコードの誤りは何ですか？",
     "options": [
-      "文字列'schema'はスキーマ変数ではなく、この例では有効なDDLでもない。変数schemaを渡す必要がある",
-      "DataFrameReaderにはcsvメソッドがない",
-      "spark.readの直後に括弧が必要",
-      "sparkにはreadがなく、DataFrameに置き換える必要がある",
-      "schemaにはColumnを渡す必要がある"
+      "ここで文字列リテラル\"schema\"は、事前定義したスキーマ変数でも有効なDDLスキーマでもない。変数を`schema`として渡す必要がある。なお、有効なDDL形式の文字列も使用できる。",
+      "`DataFrameReader`は`csv()`メソッドをサポートしていないため、`load()`に置き換える必要がある。",
+      "`DataFrameReader`オブジェクトを返すには、`spark.read`の後に括弧を付けなければならない。",
+      "`spark`には`read`プロパティがないため、`spark`を`DataFrame`に置き換える必要がある。",
+      "`read`の`schema()`メソッドは文字列ではなく列を受け取るため、引数は`col(\"schema\")`にする必要がある。"
     ],
     "explanation": "schemaと'schema'は別物です。前者は変数の値、後者は文字列です。ただしschema API自体はStructTypeだけでなく、有効なDDL文字列も受け付けます。",
     "reasons": [
@@ -1927,13 +1927,13 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-120": {
-    "stem": "別の分散クラスターを使わず、単一マシンでドライバーとタスクを動かす実行モードはどれですか。",
+    "stem": "別の分散クラスターを使わず、1台のマシン上でDriverとタスクをローカルに実行するSparkの実行・デプロイモードはどれですか？",
     "options": [
-      "Standardモード",
-      "Clusterモード",
-      "Localモード",
-      "どの選択肢でもエグゼキューターは単一ワーカーに限定される",
-      "Clientモード"
+      "スタンダードモード。",
+      "クラスターモード。",
+      "ローカルモード。",
+      "どの選択肢でも、Executorは1台のWorkerノード上で実行する必要がある。",
+      "クライアントモード。"
     ],
     "explanation": "localモードでは、1台のマシン内でSparkを実行します。clientとclusterは主にドライバーの配置の違いで、単一マシン実行を意味しません。",
     "reasons": [
@@ -1945,13 +1945,13 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-121": {
-    "stem": "sqft列を昇順に並べ、nullを先頭へ置く有効なコードを2つ選んでください。",
+    "stem": "sqft列を基準に昇順で並べ替え、欠損値（null）が先頭に来るようにしたDataFrameを返すコードはどれですか？",
     "options": [
-      "col('sqft').asc_nulls_last()でorderByする",
-      "asc_nulls_first(col('sqft'))でorderByする",
-      "col('sqft').asc().nulls_first()でorderByする",
-      "col('sqft').asc_nulls_first()でorderByする",
-      "col('sqft').nulls_first()でorderByする"
+      "storesDF.orderBy(col(\"sqft\").asc_nulls_last())",
+      "storesDF.orderBy(asc_nulls_first(col(\"sqft\")))",
+      "storesDF.orderBy(col(\"sqft\").asc().nulls_first())",
+      "storesDF.orderBy(col(\"sqft\").asc_nulls_first())",
+      "storesDF.orderBy(col(\"sqft\").nulls_first())"
     ],
     "explanation": "asc_nulls_firstには関数版とColumnメソッド版があります。昇順・降順と、nullを先頭・末尾のどちらに置くかをまとめて指定します。",
     "reasons": [
@@ -1963,13 +1963,13 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-122": {
-    "stem": "Spark DataFrameの指定列の欠損値を埋める、同等な2つのAPIを両方挙げた選択肢はどれですか。",
+    "stem": "Spark DataFrameの指定した列の欠損値を、指定した値で置き換えるために使用できる、同等の2つの操作を両方とも挙げている選択肢はどれですか？",
     "options": [
-      "DataFrame.na.fill()だけ",
-      "DataFrame.nafill()だけ",
-      "DataFrame.fillna()だけ",
-      "DataFrame.na.fill()とDataFrame.nafill()",
-      "DataFrame.na.fill()とDataFrame.fillna()"
+      "DataFrame.na.fill()",
+      "DataFrame.nafill()",
+      "DataFrame.fillna()",
+      "DataFrame.na.fill() と DataFrame.nafill()",
+      "DataFrame.na.fill() と DataFrame.fillna()"
     ],
     "explanation": "fillnaとna.fillは同じ用途の別名です。単に有効なAPIを1つ選ぶのではなく、『同等な2つを両方挙げる』という設問の条件を読み取ります。",
     "reasons": [
@@ -1981,7 +1981,7 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-123": {
-    "stem": "全列が同じ重複行を取り除き、各行が一意になる新しいDataFrameを返すコードはどれですか。",
+    "stem": "すべての行が一意になるDataFrameを返すコードはどれですか？",
     "options": [
       "storesDF.getDistinct()",
       "storesDF.duplicates.drop()",
@@ -1999,13 +1999,13 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-124": {
-    "stem": "小さいstoresDFと、はるかに大きいemployeesDFをstoreIdで結合します。効率的なブロードキャスト結合を指定するコードはどれですか。",
+    "stem": "DataFrame storesDFと、それよりもはるかに大きいDataFrame employeesDFを、storeIdを結合キーとして効率よくブロードキャスト結合するコードはどれですか？",
     "options": [
-      "大きいemployeesDFをbroadcastしてstoresDFへ結合する",
-      "結合した結果全体をbroadcastで包む",
-      "逆順で結合した結果全体をbroadcastで包む",
-      "小さいstoresDFをbroadcastしてemployeesDFへ結合する",
-      "storesDF.broadcastJoin(...)を使う"
+      "storesDF.join(broadcast(employeesDF), \"storeId\")",
+      "broadcast(storesDF.join(employeesDF, \"storeId\"))",
+      "broadcast(employeesDF.join(storesDF, \"storeId\"))",
+      "employeesDF.join(broadcast(storesDF), \"storeId\")",
+      "storesDF.broadcastJoin(employeesDF, \"storeId\")"
     ],
     "explanation": "ブロードキャストするのは十分小さい入力側です。各エグゼキューターへ配布して、大きい側を結合キーでシャッフルする負担を抑えます。",
     "reasons": [
@@ -2017,13 +2017,13 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-125": {
-    "stem": "Spark DataFrameの全行をドライバーへ返す操作はどれですか。",
+    "stem": "Spark DataFrameのすべての行を返すために使用できる操作はどれですか？",
     "options": [
-      "count()",
-      "head()",
-      "collect()",
-      "show()",
-      "take()"
+      "DataFrame.count()",
+      "DataFrame.head()",
+      "DataFrame.collect()",
+      "DataFrame.show()",
+      "DataFrame.take()"
     ],
     "explanation": "全行をRowのリストとして返すのはcollect()です。大きい結果を集めるとドライバーのメモリ不足につながるため、必要な行数ならtakeなどを使い分けます。",
     "reasons": [
@@ -2035,13 +2035,13 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-126": {
-    "stem": "storesDFとemployeesDFをstoreIdとemployeeIdの両方で内部結合したい場合、その結果を正しく返せないコードはどれですか。",
+    "stem": "storeId列とemployeeId列を使ったstoresDFとemployeesDFの内部結合の結果を、新しいDataFrameとして返すことができないコードはどれですか？",
     "options": [
-      "onに[col('storeId'),col('employeeId')]を渡す",
-      "左右それぞれの列を比較する2つの等価条件をリストで渡す",
-      "onに['storeId','employeeId']を渡す",
-      "別名s・eを付け、各キーの等価条件をリストで渡す",
-      "列名リストと'inner'を渡す"
+      "storesDF.join(employeesDF, [col(\"storeId\"), col(\"employeeId\")])",
+      "storesDF.join(employeesDF, [storesDF.storeId == employeesDF.storeId, storesDF.employeeId == employeesDF.employeeId])",
+      "storesDF.join(employeesDF, [\"storeId\", \"employeeId\"])",
+      "storesDF.alias(\"s\").join(employeesDF.alias(\"e\"), [col(\"s.storeId\") == col(\"e.storeId\"), col(\"s.employeeId\") == col(\"e.employeeId\")])",
+      "storesDF.join(employeesDF, [\"storeId\", \"employeeId\"], \"inner\")"
     ],
     "explanation": "列名の文字列リストなら共通キーの結合になります。一方、Column式を渡す場合は、左右の列を比較する真偽値の条件式が必要です。",
     "reasons": [
@@ -2053,13 +2053,13 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-127": {
-    "stem": "複数ノードのclusterモードで、ドライバー専用ノードと、エグゼキューターを置く別のワーカーノードがあるとします。この前提に反する説明はどれですか。",
+    "stem": "専用のDriverノードと、Executorを配置する別のWorkerノードを持つ、複数ノードのSparkクラスターモードでのデプロイを想定します。この前提のもとで、クラスターノードに関する誤った説明はどれですか？",
     "options": [
-      "ドライバーは専用ノードで動き、そのノードにはエグゼキューターがない",
-      "エグゼキューターはワーカー内で処理する",
-      "構成によりノード数とエグゼキューター数は一致しないことがある",
-      "この設問のクラスターには複数ノードがある",
-      "ドライバーとすべてのエグゼキューターが単一ノードにある"
+      "Spark Driverは専用のノードで動作し、そのノードにはExecutorを配置しない。",
+      "各Executorは、Workerノード内で処理エンジンとして動作する。",
+      "設定によっては、Executor数がノード数より多いことも、ノード数がExecutor数より多いこともある。",
+      "クラスター内には常に複数のノードがある。",
+      "Spark DriverとExecutorの両方を含むノードが1つだけ存在する。"
     ],
     "explanation": "一般論だけでなく、設問が置いた構成の前提で判断します。ここではドライバー専用ノードと別ワーカーがあるため、すべてが同じ1台という説明が誤りです。",
     "reasons": [
@@ -2071,13 +2071,13 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-128": {
-    "stem": "storesDFにnumberOfManagers列を追加し、全行へ整数の1を入れます。空欄を正しく埋める組み合わせはどれですか。",
+    "stem": "次のコードは、`storesDF`から、numberOfManagers列に整数の定数1を設定した新しいDataFrameを返すことを目的としています。\n\n番号付きの空欄を埋めて、コードを正しく完成させてください。\n\nコード：\n\n```\nstoresDF._1_(_2_, _3_(_4_))\n```\n\n",
     "options": [
-      "withColumn・'numberOfManagers'・lit・整数1",
-      "withColumn・'numberOfManagers'・IntegerType・整数1",
-      "newColumn・変数numberOfManagers・IntegerType・整数1",
-      "withColumn・'numberOfManagers'・col・整数1",
-      "withColumn・'numberOfManagers'・lit・文字列'1'"
+      "withColumn\n\n\"numberOfManagers\"\n\nlit\n\n1",
+      "withColumn\n\n\"numberOfManagers\"\n\nIntegerType\n\n1",
+      "newColumn\n\nnumberOfManagers\n\nIntegerType\n\n1",
+      "withColumn\n\n\"numberOfManagers\"\n\ncol\n\n1",
+      "1. withColumn\n\n2. \"numberOfManagers\"\n\n3. lit\n\n4. \"1\""
     ],
     "explanation": "定数をColumn式にするにはlitを使います。lit(1)は整数、lit('1')は文字列なので、値が似ていても型の条件で区別します。",
     "reasons": [
@@ -2089,13 +2089,13 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-129": {
-    "stem": "Spark DataFrameを並べ替える有効な別名APIを、両方挙げた選択肢はどれですか。",
+    "stem": "Spark DataFrameの行を並べ替えるために使用できる、同じ働きをする2つの有効なメソッド名を両方とも挙げている選択肢はどれですか？",
     "options": [
-      "sort()とorderBy()",
-      "orderBy()だけ",
-      "sort()だけ",
-      "sort()とorderby()",
-      "orderby()だけ"
+      "sort() と orderBy()",
+      "orderBy()",
+      "sort()",
+      "sort() と orderby()",
+      "orderby()"
     ],
     "explanation": "sortとorderByは同等の並べ替えAPIです。Pythonでは大文字小文字を区別するため、orderByのBを小文字にしたorderbyは別の有効な名前にはなりません。",
     "reasons": [
@@ -2107,13 +2107,13 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-130": {
-    "stem": "Apache Sparkの遅延評価の利点として最も適切なものはどれですか。",
+    "stem": "Apache Sparkにおける遅延評価の利点はどれですか？",
     "options": [
-      "実行前に一連の変換を把握でき、処理計画を最適化できる",
-      "プログラム中の処理を任意に省くので複雑さが減る",
-      "小さいタスクを必ず分散しないので高速になる",
-      "コンパイルが終わるまで待つだけで失敗しにくくなる",
-      "ドライバーとワーカーの通信が増えるので高速になる"
+      "実行開始前にすべての変換が分かっているため、Sparkジョブをより適切に最適化できる。",
+      "プログラム内のすべての操作を実行するわけではないため、Sparkジョブが単純になる。",
+      "クラスターのオーバーヘッドを避けるために小さなタスクを分散せず、Sparkジョブが速くなる。",
+      "コンパイルが完了するまで実行を開始しないため、Sparkジョブが失敗しにくくなる。",
+      "Spark DriverとWorkerノード間の通信が増えるため、Sparkジョブが速くなる。"
     ],
     "explanation": "遅延評価により、アクション前に必要な変換の流れを把握できます。DataFrameではフィルターの移動や不要列の除去など、全体を見た最適化につながります。",
     "reasons": [
@@ -2125,13 +2125,13 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-131": {
-    "stem": "division列をアルファベット昇順に並べたDataFrameを返さないコードはどれですか。",
+    "stem": "division列を基準にアルファベット順に並べたDataFrameを返すことができないコードはどれですか？",
     "options": [
-      "sort(asc('division'))",
-      "orderBy(['division'],ascending=[1])",
-      "orderBy(col('division').desc())",
-      "orderBy('division')",
-      "sort('division')"
+      "storesDF.sort(asc(\"division\"))",
+      "storesDF.orderBy([\"division\"], ascending=[1])",
+      "storesDF.orderBy(col(\"division\").desc())",
+      "storesDF.orderBy(\"division\")",
+      "storesDF.sort(\"division\")"
     ],
     "explanation": "この問題は『返さないもの』を選びます。sortとorderByの既定は昇順ですが、descを付けると降順になり、要求と逆になります。",
     "reasons": [
@@ -2143,12 +2143,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-132": {
-    "stem": "8パーティションのstoresDFを、シャッフルなしで4パーティションに減らすコードの空欄はどれですか。",
+    "stem": "次のコードは、現在8個のパーティションを持つDataFrame `storesDF`から、シャッフルを発生させずに4個のパーティションを持つ新しいDataFrameを返すことを目的としています。\n\n空欄を埋めてコードを正しく完成させてください。\n\nコード：\n\n```\n_1_._2_(_3_)\n```\n\n",
     "options": [
-      "storesDF.coalesce()として引数を省略する",
-      "storesDF.coalesce(4)",
-      "storesDF.coalesce(4,'storeId')",
-      "storesDF.coalesce('storeId')"
+      "1. storesDF\n\n2. coalesce\n\n3. `Nothing",
+      "1. storesDF\n\n2. coalesce\n\n3. 4",
+      "1. storesDF\n\n2. coalesce\n\n3.  4, \"storeId\"",
+      "1. storesDF\n\n2. coalesce\n\n3. \"storeId\""
     ],
     "explanation": "coalesceに減らしたいパーティション数を渡します。キーを指定して再分配するrepartitionとは異なり、coalesceは数を減らすために使います。",
     "reasons": [
@@ -2159,13 +2159,13 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-133": {
-    "stem": "Apache Sparkのタスクを最も適切に説明するものはどれですか。",
+    "stem": "Apache Sparkのタスクを最も適切に説明しているのはどれですか？",
     "options": [
-      "エグゼキューター上で実行される、スケジューリングの最小作業単位",
-      "同じエグゼキューター内にある複数スロットの集まり",
-      "シャッフルなしで実行できる最小の作業単位",
-      "実行階層の最上位",
-      "データのブロックと変換の組み合わせを指すもの"
+      "1つのExecutorで実行できる最小の処理単位。",
+      "同じExecutor内にあるスロットの集合。",
+      "シャッフルを必要とせずに実行できる最小の処理単位。",
+      "Sparkの実行階層における最上位の実行単位。",
+      "1つのExecutorで実行される、データブロックと一連の変換の組み合わせ。"
     ],
     "explanation": "タスクはスケジューリングされる最小単位で、あるステージの1パーティションに対する処理を担当します。ステージやジョブとの大小関係を押さえます。",
     "reasons": [
@@ -2177,13 +2177,13 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-134": {
-    "stem": "SparkのGC負荷を減らす一般的な推奨として、最も根拠が乏しいものはどれですか。",
+    "stem": "Apache Sparkのガベージコレクション（GC）の負担を減らすための一般的な方法として、最も妥当性が低い推奨事項はどれですか？",
     "options": [
-      "GCがボトルネックならG1GCの利用を検討する",
-      "DataFrameなどの構造化APIをできるだけ使う",
-      "変換を減らし、アクションを増やす",
-      "GC頻度を調べ、オブジェクト生成とヒープ設定を実測で調整する",
-      "実測したGCの動きに基づき、若い世代と古い世代の配分を調整する"
+      "ガベージコレクションがボトルネックになった場合、G1GCを使用して性能を改善する。",
+      "メモリへの負担を減らすため、構造化API（DataFrame/Dataset）をできるだけ使用する。",
+      "変換を減らし、アクションを増やす。",
+      "GCの頻度を確認し、測定結果に基づいてオブジェクトの割り当てやヒープ設定を調整する。",
+      "測定されたGCの動作に基づき、若い世代・古い世代へのメモリ割り当てを調整する。"
     ],
     "explanation": "アクションを増やすこと自体に、GCを減らす一般的な効果はありません。むしろ再計算やドライバーへの転送が増えることもあります。原因を測定して、オブジェクト数やメモリ設定を調整します。",
     "reasons": [
@@ -2195,13 +2195,13 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-135": {
-    "stem": "classic PySparkで、クラスター内に分割して保持する分散コレクションであり、DataFrameの.rddプロパティから得られるものはどれですか。",
+    "stem": "従来型のPySparkで、クラスター全体にパーティション分割された分散コレクションであり、DataFrameの.rddプロパティにアクセスすると返される抽象化はどれですか？",
     "options": [
-      "Deltaテーブル",
-      "RDD",
-      "Pythonのmultiprocessing",
-      "Pythonのmultithreading",
-      "ベクトル"
+      "Deltaテーブル。",
+      "RDD。",
+      "マルチプロセッシング。",
+      "マルチスレッディング。",
+      "ベクトル。"
     ],
     "explanation": "classic PySparkのDataFrame.rddは、各行をRowとして扱うRDDを返します。Pythonのマルチプロセス機能そのものを指すのではありません。",
     "reasons": [
@@ -2213,13 +2213,13 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-136": {
-    "stem": "storesDFのsqft列の平均を求め、結果の列名をsqftMeanとする新しいDataFrameを返すコードを2つ選んでください。",
+    "stem": "DataFrame `storesDF`の`sqft`列の平均を計算し、その結果をsqftMeanという名前の列に格納した新しいDataFrameを返すコードはどれですか？",
     "options": [
-      "withColumnへ列名を付けず、mean(...).alias(...)だけを渡す",
-      "aggへcol('sqft').mean().alias(...)を渡す",
-      "aggへmean('sqft').alias('sqftMean')を渡す",
-      "aggへmean(col('sqft')).alias('sqftMean')を渡す",
-      "withColumn('sqftMean',mean(col('sqft')))を使う"
+      "storesDF.withColumn(mean(col(\"sqft\")).alias(\"sqftMean\"))",
+      "storesDF.agg(col(\"sqft\").mean().alias(\"sqftMean\"))",
+      "storesDF.agg(mean(\"sqft\").alias(\"sqftMean\"))",
+      "storesDF.agg(mean(col(\"sqft\")).alias(\"sqftMean\"))",
+      "storesDF.withColumn(\"sqftMean\", mean(col(\"sqft\")))"
     ],
     "explanation": "全体の平均はaggで集約します。meanは列名文字列とColumn式の両方を受け付け、aliasで結果の列名を指定できます。",
     "reasons": [
@@ -2231,13 +2231,13 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-137": {
-    "stem": "storesDF.join(employeesDF,'storeId')で外部結合を行いたいとします。このコードで不足している指定はどれですか。",
+    "stem": "次のコードには誤りがあります。このコードは、storeId列を使ってstoresDFとemployeesDFを外部結合した、新しいDataFrameを返すことを目的としています。\n\nコード：\n\n```\nstoresDF.join(employeesDF, \"storeId\")\n```\n\n誤りを特定してください。",
     "options": [
-      "howの既定はinnerなので、outerを明示する必要がある",
-      "storeIdを必ずcolで包む必要がある",
-      "必ず左右の列の等価条件を書く必要がある",
-      "storeIdを必ずリストにする必要がある",
-      "joinは存在しないのでmergeに変更する必要がある"
+      "howパラメーターのデフォルト値は`\"inner\"`なので、`\"outer\"`を指定する引数を追加する必要がある。",
+      "結合キーstoreIdをcol()関数で囲む必要がある。",
+      "結合キーを`storesDF.storeId == employeesDF.storeId`のような明示的な条件として記述する必要がある。",
+      "結合キーstoreIdを`[\"storeId\"]`のようにリストに入れる必要がある。",
+      "DataFrame.join()メソッドは存在しないので、代わりにDataFrame.merge()を使用する必要がある。"
     ],
     "explanation": "joinは結合種類を省略すると内部結合です。一致しない左右の行も残す外部結合にするには、how='outer'などを明示します。",
     "reasons": [
@@ -2249,15 +2249,15 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-138": {
-    "stem": "storesDFのopenDateは1970年1月1日からの経過秒を表す整数です。年の何日目かを表すdayOfYear列を追加するには、掲載されたコードのどの行をつなげますか。",
+    "stem": "開発者は、DataFrame storesDFのopenDate列から、その年の何日目かを表す数値を求め、新しいdayOfYear列を含むDataFrameを作成したいと考えています。\n\nopenDateは、UNIXエポックタイムスタンプ（1970年1月1日午前0時からの経過秒数）を表す整数として格納されている点に注意してください。\n\nstoresDFのサンプルを次に示します。\n\nstoreId | openDate\n0 | 1100746394\n1 | 1474410343\n2 | 1116610009\n3 | 1180035265\n4 | 1408024997\n... | ...\n\nコードの各行（行番号を除き、選んだ行を1つの式としてメソッドチェーンでつなげてください）：\n\n```\n1. storesDF.withColumn(\"openTimestamp\", col(\"openDate\").cast(\"Timestamp\")) \\\n2. storesDF.withColumn(\"dayOfYear\", dayofyear(col(\"openDate\")))\n3. storesDF.withColumn(\"openDateFormat\", col(\"openDate\").cast(\"Date\")) \\\n4. .withColumn(\"dayOfYear\", dayofyear(col(\"openTimestamp\")))\n5. .withColumn(\"dayOfYear\", dayofyear(col(\"openDateFormat\")))\n6. .withColumn(\"dayOfYear\", get_dayofyear(col(\"openDateFormat\")))\n```\n\ndayOfYear列を正しく作成するには、どの順序でコードの行を実行すべきですか？",
     "options": [
-      "3行目でDateに変換し、6行目のget_dayofyearを使う",
-      "2行目で整数へ直接dayofyearを使う",
-      "3行目でDateに変換し、5行目でdayofyearを使う",
-      "1行目でTimestampに変換し、6行目のget_dayofyearを使う",
-      "1行目でTimestampに変換し、4行目でdayofyearを使う"
+      "3, 6",
+      "2",
+      "3, 5",
+      "1, 6",
+      "1, 4"
     ],
-    "explanation": "epoch秒はまずTimestampに変換し、その列からdayofyearを取得します。整数をDateへ直接変換することや、存在しないget_dayofyearとの取り違えに注意します。",
+    "explanation": "epoch秒はまずTimestampに変換し、その列からdayofyearを取得します。整数をDateへ直接変換することや、存在しないget_dayofyearとの取り違えに注意します。 1行目と4行目は、行番号を除いてメソッドチェーンとしてつなぎます。4行目の先頭のドットは、1行目が返したDataFrameに対してwithColumnを呼び出すことを表します。",
     "reasons": [
       "整数のDateへの直接変換と関数名が不適切です。",
       "epoch秒の整数をそのまま日付関数へ渡していませんか。先に時刻へ変換します。",
@@ -2267,13 +2267,13 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-139": {
-    "stem": "storesDFのopenDateはUNIX epoch秒の整数です。この列から数値の月を取り出すmonth列を追加する正しいコードはどれですか。",
+    "stem": "開発者は、DataFrame storesDFの`openDate`列から月の数値を取り出し、新しいmonth列を含むDataFrameを作成したいと考えています。\n\nopenDate列は、UNIXエポックタイムスタンプ、つまり1970年1月1日からの経過秒数を表す整数として格納されている点に注意してください。\n\nstoresDFのサンプルを次に示します。\n\nstoreId | openDate\n0 | 1100746394\n1 | 1474410343\n2 | 1116610009\n3 | 1180035265\n4 | 1408024997\n... | ...\n\nopenDateから求めたmonth列を含むDataFrameを正しく作成するコードはどれですか？",
     "options": [
-      "整数のopenDateへgetMonthを直接適用する",
-      "openDateをTimestampに変換し、その列へmonthを適用する",
-      "整数のopenDateへmonthを直接適用する",
-      "整数の文字列表現の4文字目から2文字を抜き出す",
-      "openDateをDateへ直接castし、その列へmonthを適用する"
+      "storesDF.withColumn(\"month\", getMonth(col(\"openDate\")))",
+      "(storesDF.withColumn(\"openTimestamp\", col(\"openDate\").cast(\"Timestamp\"))\n.withColumn(\"month\", month(col(\"openTimestamp\"))))",
+      "storesDF.withColumn(\"month\", month(col(\"openDate\")))",
+      "storesDF.withColumn(\"month\", substr(col(\"openDate\"), 4, 2))",
+      "(storesDF.withColumn(\"openDateFormat\", col(\"openDate\").cast(\"Date\"))\n.withColumn(\"month\", month(col(\"openDateFormat\"))))"
     ],
     "explanation": "epoch秒をTimestampへ変換してからmonth関数を使います。秒数の数字の並びは年月日の文字列ではないため、部分文字列で月は取り出せません。",
     "reasons": [
@@ -2285,12 +2285,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-140": {
-    "stem": "掲載のコードは、SparkSessionを作成し、DataFrameへ定数列を追加してAge>35の行を表示します。このアプリケーションでドライバーが担う主な役割はどれですか。",
+    "stem": "`my_spark_app.py`の次のコードを考えます。\n\n```\nfrom pyspark.sql import SparkSession\nfrom pyspark.sql.functions import lit\nspark = SparkSession.builder.appName(\"CoreComponentsExample\").getOrCreate()\ndata = [(\"Alice\", 34), (\"Bob\", 36), (\"Cathy\", 31)]\ncolumns = [\"Name\", \"Age\"]\n \ndf = spark.createDataFrame(data, columns).withColumn(\"Status\", lit(\"Pass\"))\ndf_filtered = df.filter(df.Age > 35)\ndf_filtered.show()\n \nspark.stop()\n```\n\nこのアプリケーションにおけるSpark Driverノードの主な役割は何ですか？",
     "options": [
-      "実行計画とタスクを調整し、ワーカーへ処理を割り当てる",
-      "監視用UIを提供することだけ",
-      "全DataFrameを保持し、すべての計算をローカル実行する",
-      "ワーカーの計算後に最終出力を保存することだけ"
+      "アクションをタスクに変換してWorkerノードに配布し、実行を調整する。",
+      "Sparkアプリケーションの監視に使うユーザーインターフェースだけを提供する。",
+      "DataFrameのデータを保存し、すべての計算をローカルで実行する。",
+      "Workerノードが計算を終えた後、最終出力を保存する。"
     ],
     "explanation": "ドライバーはアプリケーションの制御役です。showなどのアクションを受けて実行を調整し、エグゼキューターへタスクを割り当てます。",
     "reasons": [
@@ -2301,12 +2301,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-141": {
-    "stem": "図のデータを継続的に受け取るStructured Streamingのstreaming_dfがあります。対応している変換はどれですか。",
+    "stem": "データエンジニアは、次のストリーミングデータを継続的に受け取る、streaming_dfというStructured Streaming DataFrameを扱っています。\n\n![画像](https://img-c.udemycdn.com/redactor/raw/practice_test_question/2026-03-11_09-55-16-f6a9a6fea888b7c8117b90c8c8e0b523.png)\n\n![画像](https://img-c.udemycdn.com/redactor/raw/practice_test_question/2026-03-11_09-55-16-f6a9a6fea888b7c8117b90c8c8e0b523.png)\n\nストリーミングDataFrame streaming_dfでサポートされる操作はどれですか？",
     "options": [
-      "NameのcountDistinctをselectする",
-      "IdでgroupByしてcountする",
-      "timestampで全体を並べ、limit(4)する",
-      "条件でfilterした後、show()を直接呼ぶ"
+      "streaming_df.select(countDistinct(\"Name\"))",
+      "streaming_df.groupby(\"Id\").count()",
+      "streaming_df.orderBy(\"timestamp\").limit(4)",
+      "streaming_df.filter(col(\"count\") < 30).show()"
     ],
     "explanation": "ストリーミングでもキー別のcountなどの集約は可能です。実際の実行にはwriteStreamを使い、集約に合う出力モードを選びます。通常のバッチ用アクションを直接使うことはできません。",
     "reasons": [
@@ -2317,12 +2317,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-142": {
-    "stem": "翻訳モデルを毎回ロードするSeries→Seriesのpandas UDFが遅くなっています。ロード回数を減らす適切な変更はどれですか。",
+    "stem": "MLOpsエンジニアは、言語モデルを使って英語の文章をスペイン語に翻訳するPandas UDFを実装しています。しかし現在の実装では、UDFを呼び出すたびに翻訳モデルを読み込むため、パイプラインの性能が大幅に低下しています。\n\n現在のコードは次のとおりです。\n\n```\ndef in_spanish_inner(df: pd.Series) -> pd.Series:\n    model = get_translation_model(target_lang='es')\n    return df.apply(model)\nin_spanish = sf.pandas_udf(in_spanish_inner, StringType())\n```\n\n言語モデルの読み込み回数を減らすには、何を変更すべきですか？",
     "options": [
-      "通常の行単位Python UDFに変える",
-      "Series→Scalarの集約UDFに変える",
-      "同じ処理本体をそのままmapInPandasで呼ぶ",
-      "Iterator[Series]→Iterator[Series]のpandas UDFに変える"
+      "Pandas UDFを標準のPySpark UDFに変換する。",
+      "Pandas UDFをSeries → Series形式からSeries → Scalar形式に変更する。",
+      "mapInPandas()関数呼び出しを使って`in_spanish_inner()`のロジックを実行する。",
+      "Pandas UDFをSeries → Series形式からIterator[Series] → Iterator[Series]形式に変更する。"
     ],
     "explanation": "Iterator型なら、複数バッチを処理する反復の前にモデルを初期化し、各Seriesで再利用できます。型だけでなく、関数本体もiteratorを処理する形に変更します。",
     "reasons": [
@@ -2333,12 +2333,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-143": {
-    "stem": "購入履歴purch_dfを顧客マスターcust_dfと内部結合すると、マスターにない顧客の購入行が消えました。購入履歴の行を残すための変更はどれですか。",
+    "stem": "開発者は、次のコードで`sales.purchases_fct`と`sales.customer_dim`という2つのテーブルを結合する必要があります。\n\n```\nimport pyspark.sql.functions as F\npurch_df = spark.table(\"sales.purchases_fct\")\ncust_df = spark.table(\"sales.customer_dim\").dropDuplicates([\"cust_id\"])\nfact_df = purch_df.join(cust_df, F.col(\"customer_id\") == F.col(\"cust_id\"))\n```\n\n結果を確認すると、`purchases_fct`には存在していても、`customer_dim`に存在しない顧客が、結合結果から欠落していることに気付きました。\n\nこれらの`purchases_fct`側の顧客レコードを最終データセットに残すには、どのように変更すべきですか？",
     "options": [
-      "purch_dfを左側にしてleft結合する",
-      "表の順を逆にするだけで、結合種類は省略する",
-      "等価条件の左右を逆にするだけ",
-      "purch_dfを左側にしてright_outer結合する"
+      "`fact_df = purch_df.join(cust_df, F.col(\"customer_id\") == F.col(\"cust_id\"), \"left\")`",
+      "`fact_df = cust_df.join(purch_df, F.col(\"customer_id\") == F.col(\"cust_id\"))`",
+      "`fact_df = purch_df.join(cust_df, F.col(\"cust_id\") == F.col(\"customer_id\"))`",
+      "`fact_df = purch_df.join(cust_df, F.col(\"customer_id\") == F.col(\"cust_id\"), \"right_outer\")`"
     ],
     "explanation": "残したいのは購入履歴側の全行なので、purch_dfを左側にしたleft結合を使います。マスターに一致しない行では、マスター側の列がnullになります。",
     "reasons": [
@@ -2349,12 +2349,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-144": {
-    "stem": "小さい地域テーブルから、regionをキー、region_idを値とするPython辞書を作ります。region_idが小さい3件だけを含めるコードはどれですか。",
+    "stem": "開発者は、次のデータを含む小さなParquetテーブルからPythonの辞書を作成する必要があります。\n\n```\nregion_id | region\n----------+-----------\n1         | AMERICA\n3         | EUROPE\n0         | AFRICA\n4         | MIDDLE EAST\n2         | ASIA\n```\n\n辞書はregion → region_idの対応とし、`region_id`が最も小さい3件だけを含める必要があります。\n\nこれらの要件を正しく満たすコードはどれですか？",
     "options": [
-      "region・region_idの順にselectし、ID昇順でtake(3)してdictへ渡す",
-      "region_id・regionの順にselectし、ID昇順でtake(3)してdictへ渡す",
-      "region_id・regionの順にselectし、並べずlimit(3).collectする",
-      "region・region_idの順にselectし、ID降順でtake(3)してdictへ渡す"
+      "```\nregions = dict(\n    regions_df\n        .select('region', 'region_id')\n        .sort('region_id')\n        .take(3)\n)\n```",
+      "```\nregions = dict(\n    regions_df\n        .select('region_id', 'region')\n        .sort('region_id')\n        .take(3)\n)\n```",
+      "```\nregions = dict(\n    regions_df\n        .select('region_id', 'region')\n        .limit(3)\n        .collect()\n)\n```",
+      "```\nregions = dict(\n    regions_df\n        .select('region', 'region_id')\n        .sort(desc('region_id'))\n        .take(3)\n)\n```"
     ],
     "explanation": "dictへ渡す2要素の順番はキー→値です。regionを先にし、region_idの昇順で3行を取得すれば、IDが0・1・2の地域が辞書になります。",
     "reasons": [
@@ -2365,12 +2365,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-145": {
-    "stem": "devices.jsonを読み、devicesという一時ビューを登録しました。SQLでnameとplatformを選び、names.parquetというパスへParquet保存します。X・Y・Zは何ですか。",
+    "stem": "開発者は、devices.jsonファイルのname列とplatform列を含むデータをParquet形式で書き込む必要があります。次のコードが書かれていますが、X、Y、Zという3つの空欄があります。\n\n```\ndevices_df = spark.read.json(\"devices.json\")\ndevices_df.createOrReplaceTempView(\"devices\")\n \nspark.sql(\"SELECT name, platform FROM X\").Y.Z(\"names.parquet\", format=\"parquet\")\n```\n\nクエリ結果をParquetファイルとして正しく書き込むには、X、Y、Zをそれぞれ何に置き換えるべきですか？",
     "options": [
-      "devices_df・write・save",
-      "devices・save・write",
-      "devices・write・saveAsTable",
-      "devices・write・save"
+      "devices_df, write, save",
+      "devices, save, write",
+      "devices, write, saveAsTable",
+      "devices, write, save"
     ],
     "explanation": "SQLのFROMにはPython変数名ではなく、登録したビュー名devicesを使います。結果はDataFrameなので、write.saveでパスへ保存します。",
     "reasons": [
@@ -2381,12 +2381,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-146": {
-    "stem": "pyspark.pandas.DataFrameのpsdfを、通常のpyspark.sql.DataFrameへ変換するメソッドはどれですか。",
+    "stem": "次のコードを考えます。\n\n```\nimport pyspark.pandas as ps\npsdf = ps.DataFrame({'col': [1, 2], 'col2': [3, 4]})\n```\n\nPandas API on SparkのDataFrame（`pyspark.pandas.DataFrame`）を標準のPySpark DataFrame（`pyspark.sql.DataFrame`）に変換するには、どのメソッドを使用すべきですか？",
     "options": [
-      "psdf.to_spark()",
-      "psdf.to_pyspark()",
-      "psdf.to_pandas()",
-      "psdf.to_dataframe()"
+      "`psdf.to_spark()`",
+      "`psdf.to_pyspark()`",
+      "`psdf.to_pandas()`",
+      "`psdf.to_dataframe()`"
     ],
     "explanation": "pandas API on Sparkから通常のSpark DataFrameへの変換はto_sparkです。to_pandasはローカルのpandasへ集める別の操作です。",
     "reasons": [
@@ -2397,12 +2397,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-147": {
-    "stem": "掲載のdf1とdf2を、idとnameの両方が一致する行だけで内部結合します。joinのXへ入れる条件はどれですか。",
+    "stem": "次の2つのDataFrame df1とdf2を考えます。\n\n```\ndf1 = spark.createDataFrame([(1, 'Alice', 1000), (2, 'Bob', 1500)], ['id', 'name', 'salary'])\n \ndf2 = spark.createDataFrame([(1, 'Alice', 'HR'), (2, 'Charlie', 'Engineering')], \n                            ['id', 'name', 'dept'])\n \n# Perform the join\njoined_df = df1.join(df2, X)\n```\n\n2つのDataFrame間で`id`と`name`の両方が一致する内部結合を行うには、Xをどの式に置き換えるべきですか？",
     "options": [
-      "id同士の等価条件とname同士の等価条件を&で結ぶ",
-      "id同士の等価条件だけ",
-      "共通キーに['id','dept']を指定する",
-      "共通キーに['id']だけを指定する"
+      "`(df1.id == df2.id) & (df1.name == df2.name)`",
+      "`(df1.id == df2.id)`",
+      "`['id', 'dept']`",
+      "`['id']`"
     ],
     "explanation": "複数のColumn条件をANDで結ぶには、それぞれを括弧で囲んで&を使います。idだけなら、名前が異なる行まで一致してしまいます。",
     "reasons": [
@@ -2413,12 +2413,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-148": {
-    "stem": "event_tsからevent_year・event_monthを作り、Parquetテーブルへ保存します。利用者は主に年・月の列を直接filterします。現在のbucketByをどう変えると、不要なディレクトリの読み取りを省けますか。",
+    "stem": "開発者は、複雑なSparkの変換パイプラインの結果を、`events.live_latest`というParquetテーブルに保存する必要があります。下流の利用者は通常、TIMESTAMP型の`event_ts`列から取り出したevent_yearとevent_monthをSpark SQLで直接フィルタリングして、このテーブルをクエリします。\n\n現在は次の実装を使用しています。\n\n```\nimport pyspark.sql.functions as F\n \nfinal_df \\\n  .withColumn(\"event_year\", F.year(\"event_ts\")) \\\n  .withColumn(\"event_month\", F.month(\"event_ts\")) \\\n  .write \\\n  .bucketBy(42, [\"event_year\", \"event_month\"]) \\\n  .format(\"parquet\") \\\n  .saveAsTable(\"events.live_latest\")\n```\n\nしかし下流の利用者から、年と月で絞り込むクエリの性能が低いという報告がありました。\n\n`event_ts`の年と月の両方で絞り込むクエリをより効率よく実行するには、どの変更を適用すべきですか？",
     "options": [
-      "event_yearだけのpartitionByに変える",
-      "event_yearとevent_month両方のpartitionByに変える",
-      "バケット数だけを減らす",
-      "bucketByの後へevent_monthのsortByを加える"
+      "`.bucketBy()`を`.partitionBy(\"event_year\")`に置き換える。",
+      "`.bucketBy()`を`.partitionBy([\"event_year\", \"event_month\"])`に置き換える。",
+      "`.bucketBy(42, ...)`の値を小さくして、バケット数を減らす。",
+      "`.bucketBy()`の後に`.sortBy(\"event_month\")`を追加する。"
     ],
     "explanation": "年・月をパーティション列として保存し、その列を条件にするとパーティションプルーニングを使えます。bucketByのハッシュ分割と、partitionByのディレクトリ分割を区別します。",
     "reasons": [
@@ -2429,12 +2429,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-149": {
-    "stem": "Parquetファイルが/path/events/data/2024/01/01など、年/月/日の階層に届きます。year=2024のようなHive形式ではありません。配下の全ファイルを読み込む適切な指定はどれですか。",
+    "stem": "データエンジニアは、上流チームから毎晩届く複数のParquetファイルの取り込みパイプラインを作成する必要があります。ファイルのディレクトリ構成の基点となるパスは次のとおりです。\n\n/path/events/data\n\n日ごとのデータは、year/month/dayの形式に従うサブディレクトリに格納されています。\n\nディレクトリ構成の例：\n\n/path/events/data/2024/01/01\n/path/events/data/2024/01/02\n/path/events/data/2024/01/03\n/path/events/data/2023/01/01\n/path/events/data/2023/01/02\n/path/events/data/2023/01/03\n\nこのディレクトリ階層内のすべてのデータを正しく読み込むコードはどれですか？",
     "options": [
-      "inferSchema=trueで基点ディレクトリを読む",
-      "recursiveFileLookup=trueで基点ディレクトリを読む",
-      "基点直下の*だけを指定して読む",
-      "追加設定なしで基点を読む"
+      "df = spark.read.option(\"inferSchema\", \"true\").parquet(\"/path/events/data/\")",
+      "df = spark.read.option(\"recursiveFileLookup\", \"true\").parquet(\"/path/events/data/\")",
+      "df = spark.read.parquet(\"/path/events/data/*\")",
+      "df = spark.read.parquet(\"/path/events/data/\")"
     ],
     "explanation": "任意の深い階層を再帰的に探索するにはrecursiveFileLookupを使います。year=...形式のパーティション推論とは別で、この指定ではパーティション推論も無効になります。",
     "reasons": [
@@ -2445,12 +2445,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-150": {
-    "stem": "文字列をSHAKE-256へ変換する通常UDFを、Series→Seriesのpandas UDFへ変更します。本体は各要素をハッシュ化し、同じ長さのSeriesを返す形に直しました。正しい型シグネチャはどれですか。",
+    "stem": "Spark開発者は、SHAKE-256ハッシュを計算する既存のPySpark UDFの性能を最適化したいと考えています。このハッシュ機能はSpark SQLの組み込み関数ライブラリにはありません。\n\n現在のUDF実装は次のとおりです。\n\n```\nimport hashlib\nimport pyspark.sql.functions as sf\nfrom pyspark.sql.types import StringType\n \ndef shake_256(raw: str) -> str:\n    return hashlib.shake_256(raw.encode()).hexdigest(20)\n \nshake_256_udf = sf.udf(shake_256, StringType())\n```\n\n性能を改善するため、開発者は次の定義でPandas UDFに変換しようとしました。\n\n```\nshake_256_udf = sf.pandas_udf(shake_256, StringType())\n```\n\nしかしSparkで次のエラーが発生しました。\n\nUNSUPPORTED_SIGNATURE: Unsupported signature: (raw: str) -> str\n\n関数本体を、pandas Seriesの各要素のハッシュを計算し、同じ長さのSeriesを返すように書き換えた後、Series → Series形式のPandas UDFにはどのシグネチャを使用すべきですか？",
     "options": [
-      "pd.Seriesを受け取りstrを返す",
-      "Iterator[pd.Series]を受け取りIterator[pd.Series]を返す",
-      "strを受け取りstrを返す",
-      "pd.Seriesを受け取りpd.Seriesを返す"
+      "```\ndef shake_256(df: pd.Series) -> str\n```",
+      "```\ndef shake_256(df: Iterator[pd.Series]) -> Iterator[pd.Series]\n```",
+      "```\ndef shake_256(raw: str) -> str\n```",
+      "```\ndef shake_256(df: pd.Series) -> pd.Series\n```"
     ],
     "explanation": "Series→Seriesでは、入力も出力もpandas Seriesです。関数名やデコレーターだけでなく、スカラーのencodeではなく各要素を処理する本体も必要です。",
     "reasons": [
@@ -2461,7 +2461,7 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-151": {
-    "stem": "ストリーミング集約結果aggDfをconsoleへ出します。毎回のトリガーで集約結果テーブル全体を出力するoutputModeはどれですか。",
+    "stem": "次のコードで、`aggDf`はストリーミングDataFrameに対する集計処理の結果を表しています。\n\n```\naggDf\n  .writeStream \\\n  .outputMode(\"________\") \\\n  .format(\"console\") \\\n  .start()\n```\n\nトリガーが実行されるたびに集計結果のテーブル全体をコンソールに書き込むには、どの出力モードを指定すべきですか？",
     "options": [
       "complete",
       "append",
@@ -2477,12 +2477,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-152": {
-    "stem": "図のDataFrameからNameとcountを取り出し、countの大きい行から順番に並べます。正しいコードはどれですか。",
+    "stem": "データエンジニアは、次のDataFrame `df`を分析しています。\n\n![画像](https://img-c.udemycdn.com/redactor/raw/practice_test_question/2026-03-12_09-50-34-2c964a84fb12b4a9b914e8cf4bbefe8a.png)\n\n![画像](https://img-c.udemycdn.com/redactor/raw/practice_test_question/2026-03-12_09-50-34-2c964a84fb12b4a9b914e8cf4bbefe8a.png)\n\n`count`の値が最も大きい行を先頭にし、次に大きい行が続くように、行を並べ替える必要があります。\n\nName列とcount列を使用して、この順序に正しく並べ替えるコードはどれですか？",
     "options": [
-      "count・Nameの順にorderByし、ascending=Falseにする",
-      "countでorderByし、昇降順を省略する",
-      "Name・countの順にsortし、昇降順を省略する",
-      "Nameだけでsortする"
+      "`df.select(\"Name\", \"count\").orderBy(\"count\", \"Name\", ascending=False)`",
+      "`df.select(\"Name\", \"count\").orderBy(\"count\")`",
+      "`df.select(\"Name\", \"count\").sort(\"Name\", \"count\")`",
+      "`df.select(\"Name\", \"count\").sort(\"Name\")`"
     ],
     "explanation": "最優先のキーはcountで、降順を指定します。複数キーは左から優先されるため、Nameを先にすると件数の大小より名前が優先されます。",
     "reasons": [
@@ -2493,12 +2493,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-153": {
-    "stem": "図のDataFrameのName列から重複を除き、アルファベット昇順のPythonリストとして返すコードはどれですか。",
+    "stem": "データエンジニアは、次のSpark DataFrameを分析しています。\n\n![画像](https://img-c.udemycdn.com/redactor/raw/practice_test_question/2026-03-12_07-53-18-f3d8ee122167985c66bdb9bd846df2ca.png)\n\n![画像](https://img-c.udemycdn.com/redactor/raw/practice_test_question/2026-03-12_07-53-18-f3d8ee122167985c66bdb9bd846df2ca.png)\n\nName列から重複のない値を取り出し、アルファベット順に並べたリストとして返す必要があります。\n\nこれを正しく実現するコードはどれですか？",
     "options": [
-      "Nameをselectして昇順に並べるだけ",
-      "Nameをselect・distinct・昇順・collectし、各RowからNameを取り出す",
-      "Nameをselectしてdistinctするだけ",
-      "Nameをdistinctし、降順に並べる"
+      "df.select(\"Name\").orderBy(df[\"Name\"].asc())",
+      "[row[\"Name\"] for row in df.select(\"Name\").distinct().orderBy(\"Name\").collect()]",
+      "df.select(\"Name\").distinct()",
+      "df.select(\"Name\").distinct().orderBy(df[\"Name\"].desc())"
     ],
     "explanation": "必要な操作は、対象列の選択→重複除去→昇順→ドライバーへ取得→Rowから値を取り出す、の順です。DataFrameを返すだけではPythonリストになりません。",
     "reasons": [
@@ -2509,12 +2509,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-154": {
-    "stem": "JDBC経由でPostgreSQLを読むアプリケーションが、多すぎる接続を開いています。numPartitions=25などが設定されている掲載コードで、同時接続を減らす変更はどれですか。",
+    "stem": "データベース管理チームから、SparkアプリケーションがPostgreSQLデータベースへの接続を多く作りすぎていると報告がありました。エンジニアがSparkジョブを確認すると、JDBCでデータを読み込むために次のコードが使用されていました。\n\n```\nSET spark.sql.shuffle.partitions=1007;\n \nCREATE TEMPORARY VIEW sales_fct\nUSING org.apache.spark.sql.jdbc\nOPTIONS (\n  url \"jdbc:postgresql://pgdb1:5432/dw\",\n  dbtable \"dw.sales_fct\",\n  user \"sparkrep01\",\n  password \"G7xPg9vL2M\",\n  numPartitions \"25\",\n  partitionColumn \"sales_id\",\n  lowerBound \"1\",\n  upperBound \"10000\"\n)\n```\n\nSparkアプリケーションが開くデータベース接続数を減らすには、どの変更を行えばよいですか？",
     "options": [
-      "numPartitionsを25から8へ減らす",
-      "upperBoundを10000から100000へ増やす",
-      "spark.sql.shuffle.partitionsを8へ減らす",
-      "partitionColumnをインデックスのある別列へ変える"
+      "numPartitionsの値を25から8に減らす。",
+      "upperBoundの値を10,000から100,000に増やし、パーティションの分割幅を広げる。",
+      "spark.sql.shuffle.partitionsを100から8に減らす。",
+      "partitionColumnを`sales_id`から、利用可能なインデックスを持つ別のPostgreSQL列に変更する。"
     ],
     "explanation": "JDBCのnumPartitionsは、並列に使うデータベース接続数の上限に関係します。SQLのshuffle.partitionsは、その後のシャッフルの分割数であり、接続数の直接の制限ではありません。",
     "reasons": [
@@ -2525,12 +2525,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "PASTED-SPARK-20261024-155": {
-    "stem": "CSVをテーブルとして読みましたが、区切りの縦棒|を含む行全体が先頭列に入り、他の列がnullになります。先頭行には列名もあります。OPTIONSへ追加する適切な指定はどれですか。",
+    "stem": "開発者は、CSVファイルのデータがDataFrameに正しく読み込まれないSparkアプリケーションを調査しています。\n\nCSVファイルは次のSpark SQL文で読み込まれました。\n\n```\nCREATE TABLE default.air_ref\n(\n  iata STRING,\n  iso_country STRING,\n  city STRING,\n  lat DOUBLE,\n  long DOUBLE\n)\nUSING CSV\nOPTIONS ('path' = '/landing/air_ref_20241001.csv')\n```\n\nしかし、次のクエリを実行すると、\n\n```\nSELECT * FROM default.air_ref\n```\n\n例えば次のように、正しく解析されていない結果が表示されます。\n\n```\n+-------------------------+------------+------+-----+------+\n| iata                    | iso_country| city | lat | long |\n+-------------------------+------------+------+-----+------+\n| iata | iso_country | ...| NULL       | NULL | NULL| NULL |\n| SYD | AU | Sydney | -33 | ...        | NULL | NULL| NULL |\n+-------------------------+------------+------+-----+------+\n```\n\nこれは、複数の値が1つの列に読み込まれ、残りの列がNULLになっていることを示しています。\n\nCSVファイルを正しく解析するには、`CREATE TABLE`文のOPTIONS句にどのパラメーターを追加すべきですか？",
     "options": [
-      "quote='|'",
-      "inferSchema='true'",
-      "header='true'とsep='|'",
-      "header='true'だけ"
+      "`quote = '|'`",
+      "`inferSchema = 'true'`",
+      "`header = 'true', sep = '|'`",
+      "`header = 'true'`"
     ],
     "explanation": "区切り文字はsep、先頭行を列名として扱う設定はheaderです。型の推論や引用符の変更では、縦棒区切りの読み誤りは直りません。",
     "reasons": [
@@ -2541,12 +2541,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-ARC-001": {
-    "stem": "永続化したRDDの一部のパーティションが、エグゼキューターの障害で失われました。ドライバーと十分な他のエグゼキューターは正常で、元入力も参照可能、変換はすべて決定的です。後のアクションで失った部分が必要になったとき、通常どう復旧しますか。",
+    "stem": "バッチアプリケーションで、永続化したRDDの実体化が完了しています。1つのExecutorが故障し、複数のパーティションについて唯一のキャッシュコピーが失われました。Driverと十分な数のExecutorは正常です。元の入力には引き続きアクセスでき、すべての変換は決定的です。後続のアクションで失われたパーティションが必要になったとき、Sparkは通常どのように対応すべきですか？",
     "options": [
-      "アプリケーション内の全RDDの全パーティションを必ず最初から計算し直す",
-      "失ったレコードをnullに置き換える",
-      "失った部分を依存関係から再計算し、残っているキャッシュは再利用する",
-      "永続化で障害復旧が無効になるため、再開不能になる"
+      "アプリケーション内のすべてのRDDの全パーティションを、最初から再計算する。",
+      "故障したExecutorに保存されていた各レコードの代わりにNULLを返す。",
+      "失われたパーティションをリネージから再計算し、可能な場合は残っているキャッシュ済みパーティションを再利用する。",
+      "永続化によって障害復旧が無効になるため、永久に停止する。"
     ],
     "explanation": "失われたパーティションは、元入力と変換の依存関係（lineage）から再計算できます。残ったキャッシュまで全て捨てる必要はありません。キャッシュは計算結果の再利用であり、依存関係を消す操作ではありません。",
     "reasons": [
@@ -2557,12 +2557,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-ARC-002": {
-    "stem": "リモートクラスターのRDD.foreachで、ドライバーのPythonリストseenを参照する関数を実行し、各タスクがIDをappendしました。成功終了してもドライバーのリストが空なのはなぜですか。",
+    "stem": "PySparkアプリケーションがリモートクラスターで動作しています。Driver側のseenというPythonリストを、RDDのforeachアクションに渡す関数のクロージャに含めています。各タスクはこのリストに識別子を追加します。foreachは正常終了しましたが、Driverのリストは空のままです。正しい説明はどれですか？",
     "options": [
-      "foreachは変換なので、まだタスクが実行されていない",
-      "リストが1000要素未満のときだけ変更が戻る",
-      "タスクは直列化された状態のコピーを変更し、ドライバーの元リストを変更しない",
-      "Pythonリストの変更にはブロードキャスト結合の有効化が必要"
+      "foreachは変換なので、タスクはまだ実行されていない。",
+      "リストの要素数が1,000未満の場合だけ、Sparkは変更を元のリストに反映する。",
+      "Executorのタスクは、Driverプロセス内の元のリストではなく、シリアライズされたクロージャ状態のコピーを変更する。",
+      "Pythonリストを変更するには、Driverでブロードキャスト結合を有効にする必要がある。"
     ],
     "explanation": "タスクへ送られる関数と変数は、ドライバーとは別プロセスのコピーです。エグゼキューター内でリストを書き換えても、ドライバーの元リストへ変更は戻りません。",
     "reasons": [
@@ -2573,12 +2573,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-ARC-003": {
-    "stem": "Scalaの型付きDataset[Order]を使う処理をPythonへ移し、Spark SQLによる構造化データ処理の最適化は維持したいとします。Spark 3.5.6の言語APIに合う移行案はどれですか。",
+    "stem": "チームは、エンコーダーを使って業務オブジェクトをDataset[Order]として表すScalaのパイプラインを移植しています。置き換え後のアプリケーションはPythonで記述し、Spark SQLによる構造化データ処理の最適化を維持する必要があります。Apache Spark 3.5.6の公開された言語APIに合う移行計画はどれですか？",
     "options": [
-      "PythonではDataFrameを使う。型付きDataset APIはScalaとJava向けである",
-      "Pythonの型注釈で同じ型付きDataset操作をコンパイラーに強制する",
-      "PythonにDataFrame APIがないため、すべてRDDへ置き換える",
-      "Scalaのencoderをimportし、DataFrame.as(Order)で同じ型付きDatasetを作る"
+      "レコードをPySpark DataFrameで表す。強い型付けを持つDataset APIはScalaとJavaで提供されており、Pythonでは提供されていない。",
+      "Dataset[Order]にPythonの型ヒントを追加し、Pythonコンパイラーに同じ型付きDataset操作を強制させる。",
+      "SparkにはPythonのDataFrame APIがないため、すべての構造化処理をRDDに置き換える。",
+      "ScalaのエンコーダーをPythonにインポートし、DataFrame.as(Order)を呼び出して同じ型付きDataset APIを取得する。"
     ],
     "explanation": "型付きDataset APIがあるのはScalaとJavaです。Pythonではスキーマ付きDataFrameを使えば、Spark SQLの最適化を利用できます。型注釈だけで未提供のDataset APIは追加されません。",
     "reasons": [
@@ -2589,12 +2589,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-ARC-004": {
-    "stem": "複数ステージから同じ読み取り専用Python辞書を参照します。辞書は各ワーカープロセスのメモリに十分収まります。タスクのクロージャへ毎回辞書全体を含めるより効率よく配布する方法はどれですか。",
+    "stem": "PySparkアプリケーションの複数のステージで、同じPython辞書をルックアップに使います。辞書は各Workerプロセスのメモリに余裕を持って収まり、アプリケーションの実行中は読み取り専用である必要があります。エンジニアは、タスクのクロージャに辞書全体を繰り返し含める代わりに、効率よく配布したいと考えています。適切な方法はどれですか？",
     "options": [
-      "アキュムレーターへ辞書を入れ、各タスクから累積値を読む",
-      "SparkContextのbroadcast変数を作り、タスク内でvalueを読む",
-      "Python辞書へDataFrame用のbroadcast結合ヒントを直接付ける",
-      "辞書のキーごとに別のSparkSessionを作る"
+      "辞書をアキュムレーターに入れ、各タスクから集計された値を読み取る。",
+      "SparkContextのブロードキャスト変数を作成し、タスク関数内でそのvalueを読み取る。",
+      "Python辞書にDataFrameのブロードキャスト結合ヒントを直接使用する。",
+      "辞書のキーごとに別のSparkSessionを作成する。"
     ],
     "explanation": "読み取り専用のPython辞書はSparkContext.broadcastで配布し、タスク内で.valueを参照します。Pythonの値を配るbroadcast変数と、DataFrameの結合ヒントは別のAPIです。",
     "reasons": [
@@ -2605,12 +2605,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-ARC-005": {
-    "stem": "lookup_bcを使ったアクション後に、lookup_bc.unpersist(blocking=True)を呼びました。destroyは呼ばず、ドライバーのbroadcastオブジェクトも残しています。後のアクションで再びvalueを使うとどうなりますか。",
+    "stem": "Driverはlookup_bcというブロードキャスト変数を作成し、アクションで使用した後、lookup_bc.unpersist(blocking=True)を呼び出します。destroyは呼ばず、ブロードキャストオブジェクトも保持します。後続のアクションで再びlookup_bc.valueを使用すると、どのような動作が期待されますか？",
     "options": [
-      "すべてのエグゼキューターから書き込める共有変数になる",
-      "unpersistが永久に無効化するため必ず失敗する",
-      "値が空の辞書へ変わる",
-      "エグゼキューターのキャッシュは削除されるが、必要時には再配布される"
+      "値は、すべてのExecutorが書き込める共有変数になる。",
+      "unpersistはブロードキャストオブジェクトを永久に無効化するため、後続のアクションは必ず失敗する。",
+      "unpersistによってブロードキャスト値が空の辞書に変わる。",
+      "Executor上のキャッシュコピーが削除され、必要になればブロードキャストを再送できる。"
     ],
     "explanation": "unpersistはエグゼキューター上のコピーを削除しますが、broadcastオブジェクト自体を永久に無効化しません。後で必要になれば再転送されます。永久に破棄するdestroyと区別します。",
     "reasons": [
@@ -2621,12 +2621,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-ARC-006": {
-    "stem": "数値アキュムレーターで不正行を数えると同時に、各タスクが現在の全体合計を読み、閾値で停止する仕組みを考えています。アキュムレーターの仕様として正しいものはどれですか。",
+    "stem": "エンジニアは、バッチアクション中に不正な行を数えるため、数値アキュムレーターを使用しています。さらに、各Executorのタスクがアキュムレーターの現在の合計を読み、全体のしきい値に達したら停止する仕組みも作りたいと考えています。アキュムレーターの仕様を正しく説明しているのはどれですか？",
     "options": [
-      "タスクは加算し、ドライバーが値を読む。タスクが共有の現在値を読む同期カウンターではない",
-      "タスクから読むと自動でシャッフルし、全タスクが同期する",
-      "値を更新できるのはクラスターマネージャーだけ",
-      "すべてのタスクが同じ同期された値を読み書きできる"
+      "タスクは更新を加算でき、Driverが集計値を読む。タスクが読み取れる共有の全体しきい値としては使えない。",
+      "タスク内でアキュムレーターを読むと、すべてのタスクを同期するシャッフルが自動的に発生する。",
+      "アキュムレーターを更新できるのはクラスターマネージャーだけである。",
+      "すべてのタスクが、全体で同期された同じアキュムレーター値を読み書きできる。"
     ],
     "explanation": "アキュムレーターはタスクから加算し、ドライバーで結果を読む仕組みです。全タスクが同じ現在値を同期して読む共有カウンターではないため、タスク全体の停止判定には使えません。",
     "reasons": [
@@ -2637,12 +2637,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-ARC-007": {
-    "stem": "同じYARNクラスターで2つの独立したSparkアプリケーションが資源を要求しています。各ドライバーは自分のタスクをスケジュールできます。アプリケーション間でクラスター資源を割り当てるのは何ですか。",
+    "stem": "2つの独立したSparkアプリケーションが、同じYARNクラスターにExecutorのリソースを要求しています。それぞれのアプリケーションには、自分のタスクをスケジュールできるDriverがすでに存在します。これらのアプリケーション間でクラスターリソースを割り当てる責任を持つコンポーネントはどれですか？",
     "options": [
-      "YARNなどのクラスターマネージャー",
-      "空きヒープが最大のエグゼキューター",
-      "先に送信したアプリケーションのDataFrameReader",
-      "どちらかのCatalystオプティマイザー"
+      "YARNなどのクラスターマネージャー。",
+      "現在ヒープメモリの空きが最も多いExecutor。",
+      "先に投入されたアプリケーションのDataFrameReader。",
+      "いずれかのアプリケーションのCatalystオプティマイザー。"
     ],
     "explanation": "アプリケーション間の資源割り当てはYARNなどのクラスターマネージャーが担当します。各アプリ内のタスク割り当てはドライバー、SQL計画の最適化はCatalystという役割の違いを押さえます。",
     "reasons": [
@@ -2653,12 +2653,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-ARC-008": {
-    "stem": "AがDataFrameをキャッシュした同じワーカーマシンで、別SparkContextのアプリケーションBが同じパスを読みます。外部キャッシュサービスはありません。BはAのキャッシュをそのまま共有できますか。",
+    "stem": "アプリケーションAがクラスター上で大きなDataFrameをキャッシュします。アプリケーションBは同じWorkerマシン上で別のSparkContextを使って起動し、同じソースパスを読み込みます。外部キャッシュサービスは設定されていません。パスとWorkerマシンが同じという理由だけで、BはAのExecutorのキャッシュを直接再利用できますか？",
     "options": [
-      "できない。そもそも1クラスターでは1アプリケーションしか動かせない",
-      "できる。キャッシュは全SparkContextへ自動公開される",
-      "DataFrameの変数名が同じならできる",
-      "できない。別のエグゼキュ―タープロセスを使い、アプリケーション間共有には外部の仕組みが必要"
+      "できない。1つのクラスターでは同時に1つのSparkアプリケーションしか動かせないため。",
+      "できる。DataFrameのキャッシュは、Worker上のすべてのSparkContextに対して自動的に共有される。",
+      "できる。ただし、両方のアプリケーションが同じDataFrame変数名を使用している場合に限る。",
+      "できない。アプリケーションごとにExecutorプロセスは別であり、アプリケーション間でデータを共有するには外部の仕組みが必要になる。"
     ],
     "explanation": "Sparkアプリケーションごとにエグゼキュータープロセスが分かれます。通常のキャッシュは同じマシンや入力パスというだけでは共有されず、別アプリとの共有には外部の仕組みが必要です。",
     "reasons": [
@@ -2669,12 +2669,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-ARC-009": {
-    "stem": "ノートPCからclientモードで送信し、クラスターマネージャーへは接続できました。しかしファイアウォールでエグゼキューターからドライバーへの接続が遮断され、タスクが正常に動きません。不足している要件はどれですか。",
+    "stem": "開発者はノートPCからクライアントモードのアプリケーションを投入します。ノートPCはクラスターマネージャーに接続できますが、ファイアウォールによって、すべてのExecutorからDriverへの接続が遮断されています。Executorの割り当てには成功しても、タスクは正常に実行できません。不足している要件はどれですか？",
     "options": [
-      "全エグゼキューターを同じノートPCで動かすこと",
-      "ドライバーが各エグゼキューターのローカルディスクを直接読めること",
-      "実行中、エグゼキューターからドライバーのアドレスと待受ポートへ到達できること",
-      "SQL warehouseをノートPCのローカルフォルダーにすること"
+      "すべてのExecutorがDriverと同じノートPCで動作しなければならない。",
+      "Driverが、各Executorのローカルディスクをすべて直接読み取れなければならない。",
+      "アプリケーションの実行中を通して、ExecutorからDriverのアドレスと待ち受けポートに接続できなければならない。",
+      "SQLのウェアハウスディレクトリが、ノートPC上のローカルフォルダーでなければならない。"
     ],
     "explanation": "clientモードでも、エグゼキューターからドライバーへ接続できる必要があります。送信元からクラスターマネージャーへ届くことと、実行中の通信要件は別です。",
     "reasons": [
@@ -2685,12 +2685,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-ARC-010": {
-    "stem": "clientモードでドライバーJVMが1GBで起動しました。プログラム内でspark.driver.memory=4gにしても既存のヒープは増えません。次回の起動時に4GBへ設定する正しい方法はどれですか。",
+    "stem": "クライアントモードのPySparkアプリケーションを、DriverのJVMヒープ1 GBで起動します。エンジニアは実行中のPythonプログラム内でspark.driver.memoryを4gに設定し、既存のDriverヒープが増えることを期待しています。次回の実行でDriverヒープを4 GBに正しく設定する変更はどれですか？",
     "options": [
-      "設定前に入力をcacheする",
-      "SparkSession.confのshuffle.partitionsを4gにする",
-      "JVM起動前にspark-submitへ--driver-memory 4gを渡す",
-      "最初のアクション後にexecutor.memoryを4gにする"
+      "プロパティを設定する前に、入力DataFrameでcacheを呼ぶ。",
+      "SparkSession.confでspark.sql.shuffle.partitionsを4gに設定する。",
+      "DriverのJVMが起動する前に、spark-submitに--driver-memory 4gを渡す。",
+      "最初のアクションの後でspark.executor.memoryを4gに設定する。"
     ],
     "explanation": "clientモードでPythonの本体が動く時点では、ドライバーJVMは起動済みです。ヒープの大きさは、起動前にspark-submit --driver-memory 4gなどで指定します。",
     "reasons": [
@@ -2701,12 +2701,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-ARC-011": {
-    "stem": "task.maxFailuresは、defaultsファイルで2、spark-submitで3に設定されています。SparkContext作成前に、渡すSparkConfで明示的に5へ設定しました。他の変更はありません。どの値が優先されますか。",
+    "stem": "アプリケーションの設定ファイルspark-defaults.confではspark.task.maxFailuresが2です。spark-submitコマンドでは同じプロパティを3に設定しています。プログラムはSparkContextを作成する前に、SparkContextに渡すSparkConfで、このプロパティを明示的に5に設定します。名前が変更されたキーや、後からの設定変更はありません。どの値が優先されますか？",
     "options": [
-      "コマンドラインが常に優先されるため3",
-      "渡したSparkConfの明示設定が最優先なので5",
-      "合計して10",
-      "最初に読み込むファイルの2"
+      "3。コマンドラインの設定は常にアプリケーションコードより優先されるため。",
+      "5。渡されたSparkConfで明示的に設定した値が最も優先されるため。",
+      "3つの値を加算した10になる。",
+      "2。設定ファイルが最初に読み込まれるため。"
     ],
     "explanation": "この実行時設定では、明示したSparkConf、送信時の引数、defaultsファイルの順で優先されます。SparkContext作成前のSparkConfで5にしたため、最終値は5です。",
     "reasons": [
@@ -2717,12 +2717,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-ARC-012": {
-    "stem": "動的割り当てが有効で、必要なシャッフル保持の仕組みも構成済みです。未実行タスクが継続してたまり、後のフェーズではキャッシュのないエグゼキューターがタイムアウトを超えて遊休になりました。どのような動作が想定されますか。",
+    "stem": "共有クラスターで、動的割り当てを有効にしたアプリケーションが動作しています。必要なシャッフルデータ保持の仕組みも設定済みです。あるフェーズでは未実行タスクが継続的にたまっています。その後のフェーズでは、キャッシュを持たない複数のExecutorが、設定したタイムアウトを超えてアイドル状態になっています。動的割り当ては、どのような動作を提供するためのものですか？",
     "options": [
-      "DataFrameの行を増やしてコアを埋める",
-      "エグゼキューター数を固定し、Pythonスレッド数だけ変える",
-      "ステージ終了ごとにドライバーを別エグゼキューターへ移す",
-      "滞留タスクに応じてエグゼキューターを追加要求し、後で解放可能な遊休分を返す"
+      "すべてのコアが使用中になるまで、各DataFrameの行数を増やす。",
+      "初期のExecutor数を固定したまま、Pythonのスレッド数だけを変える。",
+      "ステージが終了するたびに、DriverをExecutor間で移動させる。",
+      "未実行タスクの蓄積に応じてExecutorを追加要求し、後で解放条件を満たすアイドル状態のExecutorを解放する。"
     ],
     "explanation": "動的割り当ては、未実行タスクの滞留に応じてエグゼキューターを要求し、条件を満たす遊休分を解放します。データの行数やPythonスレッド数を変える機能ではありません。",
     "reasons": [
@@ -2733,12 +2733,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-ARC-013": {
-    "stem": "外部シャッフルサービスを使う動的割り当てで、シャッフル出力を書いたエグゼキューターが削除されました。他のタスクはまだそのファイルを必要とします。このサービスの主な役割はどれですか。",
+    "stem": "アプリケーションは、外部シャッフルサービスと動的割り当てを使用しています。あるExecutorがシャッフルのmap出力ファイルを書き終え、そのファイルが他のタスクでまだ必要になる可能性がある時点で削除されました。この状況での外部シャッフルサービスの、構成上の主な目的は何ですか？",
     "options": [
-      "全Pythonオブジェクトをアプリケーション終了後も永久に保持する",
-      "エグゼキューターのプロセスと独立して、そのシャッフルファイルを提供する",
-      "ドライバーに代わって後続の全タスクをスケジュールする",
-      "終了前に全レコードをメタストアへコピーする"
+      "アプリケーション終了後も、キャッシュされたすべてのPythonオブジェクトを永久に利用可能にする。",
+      "そのExecutorのプロセスとは独立して、Executorが作成したシャッフルファイルの提供を続けられるようにする。",
+      "Driverを置き換え、すべての後続タスクをスケジュールする。",
+      "Executorが終了する前に、すべての出力レコードをメタストアにコピーする。"
     ],
     "explanation": "外部シャッフルサービスは、エグゼキューターと独立してシャッフルファイルを提供します。エグゼキューターの削除後にも、後続のタスクが必要な出力を読めるようにします。",
     "reasons": [
@@ -2749,12 +2749,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-ARC-014": {
-    "stem": "ステージ内で1つのタスクだけが遅く、投機実行の設定条件をすべて満たしています。失敗は報告されていません。Sparkが行える対処はどれですか。",
+    "stem": "あるステージでは大半のタスクが完了していますが、1つだけ他のタスクより大幅に遅れています。投機実行が有効で、その遅いタスクは設定された投機実行の条件をすべて満たしています。タスクの失敗は報告されていません。Sparkが行える対処はどれですか？",
     "options": [
-      "完了した全タスクを再実行する",
-      "ドライバーを遅いエグゼキューターへ移す",
-      "遅いタスクの入力をnullに変えて完了扱いにする",
-      "別の空きエグゼキューターで、遅いタスクの別試行を開始する"
+      "アプリケーション内の完了済みタスクをすべて再実行する。",
+      "Driverプロセスを遅いExecutorに移動する。",
+      "遅いタスクの入力レコードをNULLに変更してステージを完了する。",
+      "別の利用可能なExecutor上で、遅いタスクの別の実行試行を開始する。"
     ],
     "explanation": "投機実行は、条件を満たす遅いタスクの別試行を開始して、遅延の影響を減らします。失敗報告がなくても動作し、完了済みの全タスクを再実行するものではありません。",
     "reasons": [
@@ -2765,12 +2765,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-ARC-015": {
-    "stem": "spark.task.maxFailures=3のバッチ処理で、同じタスクが成功を挟まず3回連続して失敗しました。通常カウントされる失敗で、他のポリシーはありません。この設定の意味はどれですか。",
+    "stem": "バッチアプリケーションでspark.task.maxFailuresを3に設定しています。ある1つのタスクが、途中で成功することなく、3回連続で失敗しました。いずれも通常カウントされるタスクの失敗であり、他の再試行ポリシーによる上書きはありません。この設定は何を意味しますか？",
     "options": [
-      "ドライバーが生きている限り無限に再試行する",
-      "そのタスクの連続失敗が上限3回に達し、ジョブを断念する",
-      "全タスクの失敗数を合計し、3の倍数かを調べる",
-      "初回の後に3回再試行できるので、必ず4回目を開始する"
+      "Driverが動作している限り、そのタスクを無期限に再試行する。",
+      "3回連続の失敗で、そのタスクに設定した失敗回数の上限に達し、Sparkはジョブを断念する。",
+      "すべてのタスクの失敗回数を合計し、その合計が3で割り切れるかどうかだけを確認する。",
+      "初回の実行後に3回の再試行を許可するため、必ず4回目の実行が開始される。"
     ],
     "explanation": "spark.task.maxFailuresは、同じタスクの連続失敗回数の上限です。3なら初回を含む3回で上限となり、初回後に許される再試行は2回です。",
     "reasons": [
@@ -2781,12 +2781,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-ARC-016": {
-    "stem": "同じSparkContextへ別スレッドから長いバッチと短い対話処理のアクションを送ります。既定のFIFOでは長いジョブが枠を占有します。同時ジョブにアプリケーションの資源を分けたい場合のモードはどれですか。",
+    "stem": "あるサービスは、同じSparkContextに対し、別々のスレッドから、時間のかかるバッチアクションと短い対話的なアクションを投入します。デフォルトのFIFOスケジューラーでは、長いジョブが利用可能な実行枠をすべて占有し、短いジョブが待たされることがあります。並行するジョブにアプリケーションのリソースを分けたいと考えています。この要件に対応するスケジューリングモードはどれですか？",
     "options": [
-      "task.maxFailuresを1にする",
-      "短いジョブを長いジョブのステージへ変える",
-      "アクションをやめ、変換だけを定義する",
-      "SparkContext内でFAIRスケジューリングを使う"
+      "spark.task.maxFailuresを1にする。",
+      "すべての短いジョブを、長いジョブ内の別ステージに変更する。",
+      "アクションをすべて無効にし、変換だけを実行する。",
+      "SparkContext内でFAIRスケジューリングを使用する。"
     ],
     "explanation": "同じSparkContext内のジョブへ資源を分けるにはFAIRスケジューラーを使います。クラスター全体で別アプリケーションへ資源を割り当てる役割とは区別します。",
     "reasons": [
@@ -2797,12 +2797,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-ARC-017": {
-    "stem": "1台のワーカーマシン上に、同じアプリケーションのエグゼキュータープロセスが2つあります。両方に十分なCPUとメモリが割り当てられています。正しい判断はどれですか。",
+    "stem": "エンジニアは、1台のWorkerマシン上で2つのExecutorプロセスの識別子を確認しました。どちらも同じアプリケーションに属し、クラスターマネージャーは両方に十分なCPUとメモリを割り当てています。妥当な結論はどれですか？",
     "options": [
-      "有効な構成であり得る。ワーカーはマシン、エグゼキューターはそこで動くプロセスである",
-      "2つのヒープは必ず1つの共有JVMヒープへ統合される",
-      "2つのプロセスIDはどちらもドライバーである",
-      "複数配置できないので、必ずlocalモードである"
+      "これは有効な構成になり得る。WorkerはExecutorプロセスを配置できるマシンであり、ExecutorとWorkerノードは同じものではない。",
+      "Sparkは2つのExecutorのヒープを、1つの共有JVMヒープに統合しなければならない。",
+      "両方のプロセス識別子が、必ずDriverを指している。",
+      "Workerには複数のExecutorを配置できないため、このアプリケーションは必ずローカルモードである。"
     ],
     "explanation": "ワーカーは処理を動かすマシン、エグゼキューターはアプリケーション用のプロセスです。資源と設定が許せば、同じワーカーに複数のエグゼキューターを配置できます。",
     "reasons": [
@@ -2813,12 +2813,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-ARC-018": {
-    "stem": "同じSparkContextを1時間維持し、複数の独立したアクションを実行します。動的割り当ては無効で障害もありません。アクションが終わるたびに別アプリケーションと新しいエグゼキューターが必要ですか。",
+    "stem": "長時間動作するアプリケーションが、1つのSparkContextを維持し、1時間にわたって複数の独立したアクションを投入します。動的割り当ては無効で、Executorの故障も発生していません。アクションが終わるたびに、新しいアプリケーションと新しいExecutor一式を作成する必要がありますか？",
     "options": [
-      "不要。同じアプリケーションとエグゼキューターで複数アクションのタスクを実行できる",
-      "不要。後の全アクションはクラスターマネージャー内で実行する",
-      "必要。アクションごとに別SparkContextが必要",
-      "必要。エグゼキューターは1タスクが終わるたびに必ず破棄される"
+      "不要。同じアプリケーションとExecutorプロセスで、SparkContextが動作している間、複数のアクションのタスクを実行できる。",
+      "不要。それ以降のすべてのアクションは、クラスターマネージャーのプロセス内だけで実行される。",
+      "必要。アクションごとに異なるSparkContextが必要である。",
+      "必要。Executorは1つのタスクのためだけに存在し、その終了後には必ず破棄される。"
     ],
     "explanation": "アクションが終わっても、アプリケーション全体が終わるとは限りません。同じSparkContextとエグゼキューターを使い、複数アクションのタスクを処理できます。",
     "reasons": [
@@ -2829,12 +2829,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-ARC-019": {
-    "stem": "リモート分散実行でrdd.foreach(print)は成功しましたが、レコードがドライバーのコンソールに出ません。ワーカーの出力はこのコンソールへ集約されないとします。直接の理由はどれですか。",
+    "stem": "開発者は、リモートで分散実行するPySparkアプリケーションで、レコードを確認するためにrdd.foreach(print)を使います。アクションは成功しましたが、レコードはDriverのコンソールに表示されません。Workerの出力が、そのコンソールへ自動集約されないものとします。最も直接的な理由はどれですか？",
     "options": [
-      "関数はエグゼキューターのタスクで実行され、出力もそちらのstdoutへ出る",
-      "複数パーティションではドライバーのstdoutが無効になる",
-      "キャッシュされているとforeachは全関数呼び出しを省く",
-      "printがSQLへ変換され、メタストアに保存される"
+      "関数はExecutorのタスク内で実行されるため、出力先はDriverの標準出力ではなく、Executor側の標準出力になる。",
+      "パーティションが複数あると、Driverの標準出力が無効になる。",
+      "データがキャッシュされていると、foreachはすべての関数呼び出しを黙って破棄する。",
+      "print関数はSQLクエリに変換され、その結果がメタストアに格納される。"
     ],
     "explanation": "foreach内のprintは、実行先のエグゼキューターの標準出力へ出ます。ドライバーの画面に出ないことだけで、タスクが実行されていないとは判断できません。",
     "reasons": [
@@ -2845,12 +2845,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-ARC-020": {
-    "stem": "タスク内で使う独自の純Pythonパッケージpricing_rulesが、送信元にしかありません。pricing_rules.zipをアプリケーションと一緒に配布するspark-submitオプションはどれですか。",
+    "stem": "PySparkアプリケーションは、タスク関数内でpricing_rulesという独自の純Pythonパッケージをインポートします。このパッケージは投入元のマシンにはインストールされていますが、どのExecutorにもありません。エンジニアはパッケージを含むpricing_rules.zipを持っており、アプリケーションとともに配布したいと考えています。適切なspark-submitオプションはどれですか？",
     "options": [
-      "--executor-coresへzipを渡す",
-      "--py-filesへzipを渡す",
-      "--driver-memoryへzipを渡す",
-      "--nameへzipを渡す"
+      "--executor-cores pricing_rules.zip",
+      "--py-files pricing_rules.zip",
+      "--driver-memory pricing_rules.zip",
+      "--name pricing_rules.zip"
     ],
     "explanation": "純Pythonの.py・.zip・.eggは、--py-filesでアプリケーションと一緒に配布できます。送信元にインストール済みでも、リモートの実行環境へ自動で導入されるとは限りません。",
     "reasons": [
@@ -2861,12 +2861,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-ARC-021": {
-    "stem": "同じSparkContextを使いつつ、一時ビューとSQL設定を分けた2つのセッションが必要です。second=spark.newSession()で作るsecondの説明はどれですか。",
+    "stem": "サーバーは、同じSparkContextを使いながら、一時ビューとセッションのSQL設定を分離した2つのSpark SQLセッションを必要としています。second = spark.newSession()を呼び出しました。secondを正しく説明しているのはどれですか？",
     "options": [
-      "元のセッションを停止し、ドライバーをエグゼキューターへ移す",
-      "一時ビューとSQL設定の変更をすべて元セッションと共有する",
-      "完全に別のSparkContextとクラスター割り当てを持つ",
-      "SQL設定・一時ビュー・UDF登録は分離し、SparkContextとテーブルキャッシュは共有する"
+      "sparkを永久に停止し、そのDriverプロセスをExecutorに移動する。",
+      "すべての一時ビューとSQL設定の変更をsparkと共有する。",
+      "新しい独立したSparkContextと、完全に別のクラスターリソース割り当てを持つ。",
+      "SQL設定、一時ビュー、UDFの登録状態は別々だが、SparkContextとテーブルキャッシュは共有する。"
     ],
     "explanation": "newSessionはSQL設定・一時ビュー・UDF登録を分離し、SparkContextとテーブルキャッシュは共有します。新しい独立アプリケーションを作る操作ではありません。",
     "reasons": [
@@ -2877,12 +2877,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-SQL-001": {
-    "stem": "customers.idは非nullですが、blocked.idにはnullがあります。id NOT IN (SELECT id FROM blocked)が予想外に0行を返しました。NOT INを使い続け、ブロックされていない全顧客を残す修正はどれですか。",
+    "stem": "レポート作成ジョブは、ブロックされていない顧客を抽出します。customers.idはすべて非NULLですが、blocked.idにはNULLが含まれる場合があります。現在の条件はid NOT IN (SELECT id FROM blocked)であり、想定に反して1行も返されません。NOT INを使い、ブロックされていないすべての顧客を残す必要があります。Spark SQLでの正しい置き換えはどれですか？",
     "options": [
-      "右側のnullをCOALESCEで対象顧客自身のIDへ変える",
-      "副問い合わせでblocked.id IS NOT NULLの行だけを比較する",
-      "nullを除いた集合へのINに変える",
-      "元の条件へOR id IS NULLを加える"
+      "id NOT IN (SELECT COALESCE(id, customers.id) FROM blocked)",
+      "id NOT IN (SELECT id FROM blocked WHERE id IS NOT NULL)",
+      "id IN (SELECT id FROM blocked WHERE id IS NOT NULL)",
+      "id NOT IN (SELECT id FROM blocked) OR id IS NULL"
     ],
     "explanation": "NOT INの比較集合にnullがあると、不一致の値でも判定がUNKNOWNになり、WHEREを通りません。左IDが非nullという前提なので、右の副問い合わせからnullを除けば意図どおり比較できます。",
     "reasons": [
@@ -2893,12 +2893,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-SQL-002": {
-    "stem": "ordersから、完了済み注文だけの合計額が50000を超える地域を、地域ごとに1行返します。未完了分を合計へ含めない正しいSQLはどれですか。",
+    "stem": "ordersテーブルにはregion、status、amountがあります。アナリストは、完了した注文のamount合計が50000を超える地域について、地域ごとに1行を取得する必要があります。保留中の注文は合計に含めてはいけません。Spark SQLで、両方のフィルターを適切な段階で適用するクエリはどれですか？",
     "options": [
-      "WHEREで完了済みに絞り、地域別SUMを計算し、HAVINGで合計50000超を判定する",
-      "WHEREでSUMを判定し、HAVINGで完了状態を判定する",
-      "WHEREで完了かつ個々のamountが50000超の行だけを残して集計する",
-      "地域と状態で集計し、状態を絞らず合計50000超を返す"
+      "SELECT region, SUM(amount) AS total FROM orders WHERE status = 'complete' GROUP BY region HAVING SUM(amount) > 50000",
+      "SELECT region, SUM(amount) AS total FROM orders WHERE SUM(amount) > 50000 GROUP BY region HAVING status = 'complete'",
+      "SELECT region, SUM(amount) AS total FROM orders WHERE status = 'complete' AND amount > 50000 GROUP BY region",
+      "SELECT region, SUM(amount) AS total FROM orders GROUP BY region, status HAVING SUM(amount) > 50000"
     ],
     "explanation": "WHEREで完了済みの明細を絞り、GROUP BYで地域別に合計し、HAVINGで合計額を判定します。個々の注文が50000超である必要はありません。",
     "reasons": [
@@ -2909,12 +2909,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-SQL-003": {
-    "stem": "口座内の(day,amount)が(1,10)・(1,20)・(2,5)です。day順のRANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROWでSUM(amount)を計算すると、それぞれの行の値はどうなりますか。",
+    "stem": "バッチクエリでSUM(amount) OVER (PARTITION BY account ORDER BY day RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)を使い、累計を計算します。あるaccountの行は、(day=1, amount=10)、(day=1, amount=20)、(day=2, amount=5)です。すべての値は非NULLです。この3行に付く合計値は、それぞれどれですか？",
     "options": [
-      "10・30・35",
-      "10・20・5",
-      "30・30・35",
-      "35・35・35"
+      "10, 30, 35",
+      "10, 20, 5",
+      "30, 30, 35",
+      "35, 35, 35"
     ],
     "explanation": "RANGEのCURRENT ROWは、並べ替え値が同じ行も含みます。day=1の両行は10+20=30、day=2はそこへ5を加えて35です。行単位で範囲を指定するROWSと区別します。",
     "reasons": [
@@ -2925,12 +2925,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-SQL-004": {
-    "stem": "部署内の異なる給与水準の上位2段階に属する全従業員を残します。同額者は全員残し、2人を超えても構いません。非nullのsalaryに対し、外側でlevel_no<=2と絞るための式はどれですか。",
+    "stem": "給与レポートでは、部署ごとに、重複を除いた給与水準の上位2段階に該当する従業員をすべて残す必要があります。同額の従業員を残すため、部署によっては2人を超える結果になります。給与はすべて非NULLです。外側のクエリでlevel_no <= 2に絞り込む前に、サブクエリでlevel_noを計算する式はどれですか？",
     "options": [
-      "部署別・給与降順のROW_NUMBER",
-      "部署別・給与降順のNTILE(2)",
-      "部署別・給与降順のDENSE_RANK",
-      "部署別・給与降順のRANK"
+      "ROW_NUMBER() OVER (PARTITION BY department ORDER BY salary DESC)",
+      "NTILE(2) OVER (PARTITION BY department ORDER BY salary DESC)",
+      "DENSE_RANK() OVER (PARTITION BY department ORDER BY salary DESC)",
+      "RANK() OVER (PARTITION BY department ORDER BY salary DESC)"
     ],
     "explanation": "DENSE_RANKは同額を同順位にし、次の給与水準へ欠番なしで進みます。そのため、上位2つの異なる給与水準に属する同額者を全員残せます。",
     "reasons": [
@@ -2941,12 +2941,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-SQL-005": {
-    "stem": "account内でseqは一意、全列は非nullです。全行へ、その口座のseq最大行のbalanceを付けます。LAST_VALUEが現在行で止まらず口座全体を見る式はどれですか。",
+    "stem": "台帳にはaccount、seq、balanceがあります。各account内でseqは一意で、すべての列は非NULLです。各出力行に、そのaccount内でseqが最大の行のbalanceを付ける必要があります。LAST_VALUEが現在行で止まらずaccount全体を調べることを保証するウィンドウ式はどれですか？",
     "options": [
-      "口座別で、現在行だけをフレームにする",
-      "口座別に分けず、先頭から末尾までをフレームにする",
-      "口座別で、先頭から現在行までをフレームにする",
-      "口座別・seq順で、先頭から末尾までをフレームにする"
+      "LAST_VALUE(balance) OVER (PARTITION BY account ORDER BY seq ROWS BETWEEN CURRENT ROW AND CURRENT ROW)",
+      "LAST_VALUE(balance) OVER (ORDER BY seq ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING)",
+      "LAST_VALUE(balance) OVER (PARTITION BY account ORDER BY seq ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)",
+      "LAST_VALUE(balance) OVER (PARTITION BY account ORDER BY seq ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING)"
     ],
     "explanation": "LAST_VALUEで口座の最後の行を見るには、集計範囲をUNBOUNDED FOLLOWINGまで広げます。求めるのはseq最大行のbalanceであり、balance自体の最大値ではありません。",
     "reasons": [
@@ -2957,12 +2957,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-SQL-006": {
-    "stem": "sensor内のseq=1・2・3に対するreadingは8・null・12です。LAG(reading,1,-1)をseq順で使い、既定のRESPECT NULLSとすると、返る値はどれですか。",
+    "stem": "センサーレポートでLAG(reading, 1, -1) OVER (PARTITION BY sensor ORDER BY seq)を使用します。あるsensorには一意なseq値1、2、3があり、readingはそれぞれ8、NULL、12です。デフォルトのRESPECT NULLSの動作を使用します。この式はseq順にどの値を返しますか？",
     "options": [
-      "-1・8・null",
-      "-1・8・8",
-      "-1・8・-1",
-      "null・8・null"
+      "-1, 8, NULL",
+      "-1, 8, 8",
+      "-1, 8, -1",
+      "NULL, 8, NULL"
     ],
     "explanation": "LAGの第3引数-1は、参照先の行が存在しないときの値です。3行目には前の行があり、そのreadingがnullなので、既定ではnullを返します。",
     "reasons": [
@@ -2973,12 +2973,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-SQL-007": {
-    "stem": "ショップごとに全注文数と、支払済み注文だけの合計額を出します。未払い注文も件数には含めます。各ショップには支払済み注文が1件以上あります。適切なSQLはどれですか。",
+    "stem": "ダッシュボードには、shopごとに1行、全注文の件数、支払済み注文だけのamountの合計が必要です。ordersテーブルには未払い注文も含まれる場合があります。未払い注文を全体件数には残し、支払済み金額の合計からだけ除外するクエリはどれですか？ 各shopには少なくとも1件の支払済み注文があるものとします。",
     "options": [
-      "WHEREでpaidに絞ってからCOUNTとSUMを計算する",
-      "COUNT(status='paid')で全件数を数え、SUMは全行を足す",
-      "COUNT(*)で全件を数え、SUMだけFILTER(WHERE status='paid')を使う",
-      "全行を集計し、HAVINGでstatus='paid'を指定する"
+      "SELECT shop, COUNT(*) AS all_n, SUM(amount) AS paid_total FROM orders WHERE status = 'paid' GROUP BY shop",
+      "SELECT shop, COUNT(status = 'paid') AS all_n, SUM(amount) AS paid_total FROM orders GROUP BY shop",
+      "SELECT shop, COUNT(*) AS all_n, SUM(amount) FILTER (WHERE status = 'paid') AS paid_total FROM orders GROUP BY shop",
+      "SELECT shop, COUNT(*) AS all_n, SUM(amount) AS paid_total FROM orders GROUP BY shop HAVING status = 'paid'"
     ],
     "explanation": "集約のFILTERは、その集約だけの入力を絞ります。COUNT(*)は全注文を数え、SUMだけpaidを対象にできます。WHEREで絞ると、全注文数まで減ってしまいます。",
     "reasons": [
@@ -2989,7 +2989,7 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-SQL-008": {
-    "stem": "入力(customer_id,channel)は(1,'web')・(1,'web')・(1,null)・(2,'app')・(null,'app')です。2引数のCOUNT(DISTINCT customer_id,channel)は何を返しますか。structを1引数にしたCOUNTではありません。",
+    "stem": "アナリストはSELECT COUNT(DISTINCT customer_id, channel) AS n FROM touchpointsを実行します。入力の組は(1,'web')、(1,'web')、(1,NULL)、(2,'app')、(NULL,'app')です。Apache Spark 3.5.6では、いくつが返されますか？ この問題は2引数のCOUNT式を対象とし、structに対するCOUNTではありません。",
     "options": [
       "3",
       "4",
@@ -3005,12 +3005,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-SQL-009": {
-    "stem": "regionには実データのnullがあります。ROLLUP(region)で、実nullのグループと総計行のregionがどちらもnullになりました。総計だけを'ALL'にし、実nullは保つ式はどれですか。",
+    "stem": "salesテーブルのregionには、実際のデータとしてNULLが含まれています。レポートでGROUP BY ROLLUP(region)を使用すると、実際のNULL地域のグループと、regionが同じくNULLとなる総計行の両方が生成されます。実際のNULLは維持し、総計だけを'ALL'と表示する必要があります。SELECT句のregionをどの式に置き換えるべきですか？",
     "options": [
-      "GROUPING(region)=1のときだけ'ALL'にする",
-      "COALESCE(region,'ALL')を使う",
-      "region IS NULLならすべて'ALL'にする",
-      "GROUPING(region)=0のとき'ALL'にする"
+      "CASE WHEN GROUPING(region) = 1 THEN 'ALL' ELSE region END",
+      "COALESCE(region, 'ALL')",
+      "CASE WHEN region IS NULL THEN 'ALL' ELSE region END",
+      "CASE WHEN GROUPING(region) = 0 THEN 'ALL' ELSE region END"
     ],
     "explanation": "GROUPING(region)=1は、集計のためにregionが省略された行を示します。実データのnullをまとめたグループは0なので、総計のnullだけを区別できます。",
     "reasons": [
@@ -3021,12 +3021,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-SQL-010": {
-    "stem": "同じスキーマの2つの監査データを結合します。各入力内でも入力間でも、同じ行の出現回数をすべて保持する必要があります。適切なSQL演算はどれですか。",
+    "stem": "2つの監査用抽出データのスキーマは同一です。同じ行が各抽出データ内に繰り返し現れることも、両方の抽出データに存在することもあります。繰り返し発生したイベントを調査しているため、結合後の監査データでは出現回数をすべて維持する必要があります。列の調整は不要です。重複した出現を削除せず、この要件を満たすSpark SQLの操作はどれですか？",
     "options": [
-      "UNION",
-      "UNION ALL",
-      "UNION ALLした結果全体にDISTINCT",
-      "INTERSECT ALL"
+      "SELECT * FROM audit_a UNION SELECT * FROM audit_b",
+      "SELECT * FROM audit_a UNION ALL SELECT * FROM audit_b",
+      "SELECT DISTINCT * FROM (SELECT * FROM audit_a UNION ALL SELECT * FROM audit_b) t",
+      "SELECT * FROM audit_a INTERSECT ALL SELECT * FROM audit_b"
     ],
     "explanation": "UNION ALLは両入力の全ての出現を保持します。UNIONは既定で重複を除くため、同一イベントが何回現れたかという監査情報を失います。",
     "reasons": [
@@ -3037,12 +3037,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-SQL-011": {
-    "stem": "左入力はx・x・x・y、右入力はx・xです。右の1出現ごとに左の同じ1出現を相殺するEXCEPT ALLを使うと、何が残りますか。",
+    "stem": "在庫の照合に多重集合（bag）の考え方を使います。右側の入力の各出現は、左側の等しい値の出現を1つ相殺します。1列の左入力にはx、x、x、yがあり、右入力にはx、xがあります。Spark SQLでSELECT item FROM left_input EXCEPT ALL SELECT item FROM right_inputを実行した後、どの行が残りますか？",
     "options": [
-      "xが3行とyが1行",
-      "xが1行とyが1行",
-      "yだけ",
-      "xが2行とyが1行"
+      "xが3行、yが1行。",
+      "xが1行、yが1行。",
+      "yだけ。",
+      "xが2行、yが1行。"
     ],
     "explanation": "EXCEPT ALLは出現回数を差し引きます。xは3−2=1行、yは右にないため1行残ります。EXCEPT DISTINCTのように、右にあるxを全て除くわけではありません。",
     "reasons": [
@@ -3053,12 +3053,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-SQL-012": {
-    "stem": "null可能なキーで結合します。両方nullなら一致、片方だけnullなら不一致とします。重複キーの通常の結合件数は許容し、代替値への置換はしません。適切なON条件はどれですか。",
+    "stem": "照合処理で、NULLになり得るkeyを使いincomingとreferenceを結合します。業務ルールでは2つのNULLキーを等しいと見なしますが、NULLキーを非NULLキーに一致させてはいけません。キーの重複は許可され、通常の結合による行の増加も許容されます。NULLを特別な代替値に置き換えず、この等価ルールを正確に実装するSpark SQLのON条件はどれですか？",
     "options": [
-      "片方のkey IS NULLをORで結ぶ",
-      "通常の=で比較する",
-      "null安全な等価演算子<=>で比較する",
-      "両方のnullをCOALESCEで0へ置き換えて=で比較する"
+      "incoming.key IS NULL OR reference.key IS NULL",
+      "incoming.key = reference.key",
+      "incoming.key <=> reference.key",
+      "COALESCE(incoming.key, 0) = COALESCE(reference.key, 0)"
     ],
     "explanation": "<=>はnull安全な等価比較です。両方nullならtrue、片方だけnullならfalseになります。0などへの置換は、本物の0とnullを誤って一致させる恐れがあります。",
     "reasons": [
@@ -3069,12 +3069,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-SQL-013": {
-    "stem": "全顧客を表示し、支払済み請求があれば金額を併記します。未払い請求しかない顧客も、金額nullで残す必要があります。適切なクエリはどれですか。複数の支払済み請求による複数行は許容します。",
+    "stem": "レポートには、すべての顧客と、その顧客の支払済み請求書の金額を表示する必要があります。支払済み請求書がない顧客は、未払い請求書があっても、請求金額をNULLとして残さなければなりません。これらの顧客を維持するSpark SQLクエリはどれですか？ invoices.customer_idはcustomers.idを参照し、支払済み請求書が複数あれば複数行になってよいものとします。",
     "options": [
-      "INNER JOINのONにpaid条件を入れる",
-      "LEFT JOIN後のWHEREでpaidまたは右のcustomer_idがnullの行だけ残す",
-      "LEFT JOINのONにキーとpaid条件を両方入れる",
-      "LEFT JOIN後のWHEREでpaidの行だけ残す"
+      "SELECT c.id, i.amount FROM customers c INNER JOIN invoices i ON c.id = i.customer_id AND i.status = 'paid'",
+      "SELECT c.id, i.amount FROM customers c LEFT JOIN invoices i ON c.id = i.customer_id WHERE i.status = 'paid' OR i.customer_id IS NULL",
+      "SELECT c.id, i.amount FROM customers c LEFT JOIN invoices i ON c.id = i.customer_id AND i.status = 'paid'",
+      "SELECT c.id, i.amount FROM customers c LEFT JOIN invoices i ON c.id = i.customer_id WHERE i.status = 'paid'"
     ],
     "explanation": "paid条件をLEFT JOINのONへ含めると、支払済み請求がない顧客もnull補完で残せます。結合後のWHEREでpaidに絞ると、未払い請求しかない顧客が消えます。",
     "reasons": [
@@ -3085,7 +3085,7 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-SQL-014": {
-    "stem": "CSVの明示スキーマはid INT,name STRINGですが、ヘッダーがname,idの順に逆転しました。header=true、caseSensitive=trueです。位置で黙って読み込まず、不一致として拒否する設定はどれですか。",
+    "stem": "CSVのスキーマをid INT, name STRINGと明示的に定義しています。供給元はカンマ区切りを維持したまま、誤ってヘッダーをname,idの順に逆転させました。パイプラインではheader=true、spark.sql.caseSensitive=trueを使用します。位置だけでスキーマを黙って適用するのではなく、列位置の不一致を拒否する必要があります。Spark 3.5.6で設定すべきCSVオプションはどれですか？",
     "options": [
       "enforceSchema=true",
       "inferSchema=true",
@@ -3101,12 +3101,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-SQL-015": {
-    "stem": "WITH recent AS (...) SELECT COUNT(*) FROM recentは成功しますが、別のspark.sqlでSELECT * FROM recentを実行すると、テーブルやビューがないため失敗します。同じセッションが開いたままでも失敗する理由はどれですか。",
+    "stem": "ノートブックでspark.sql(\"WITH recent AS (SELECT * FROM events WHERE event_date = DATE '2026-10-01') SELECT COUNT(*) FROM recent\")を実行すると成功します。しかし別のspark.sql呼び出しでSELECT * FROM recentを実行すると、recentというテーブルもビューも存在しないため失敗します。SparkSessionは開いたままです。この動作を正しく説明しているのはどれですか？",
     "options": [
-      "CTE名はそのSQL文の中だけで有効で、セッションのビューとしては登録されない",
-      "最初のクエリでcollectすれば永続テーブルになる",
-      "CTEは常にglobal_tempへ保存されるので、その接頭辞が必要",
-      "セッションを再起動して初めてCTEが利用できる"
+      "CTE名の有効範囲はそのSQL文内であり、セッションのビューとしては登録されない。",
+      "最初のクエリでcollect()を実行すれば、CTEが永続テーブルになる。",
+      "すべてのCTEはglobal_tempデータベースに格納されるため、その接頭辞が必要である。",
+      "SparkSessionを停止して再起動した後でのみ、CTEを利用できる。"
     ],
     "explanation": "WITHで定義したCTEは、そのSQL文の中だけで有効です。セッションが開いたままでも、一時ビューとしてカタログに登録されたことにはなりません。",
     "reasons": [
@@ -3117,12 +3117,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-SQL-016": {
-    "stem": "キャッシュ済みのParquetテーブルanalytics.shipmentsのファイルを、外部処理が同じ場所で置き換えました。スキーマ変更やパーティション追加はありません。定義を残し、古いキャッシュとメタデータを無効化するSQLはどれですか。",
+    "stem": "analytics.shipmentsというParquetテーブルがSparkにキャッシュされています。外部プロセスが、スキーマの変更やカタログへのパーティション追加をせず、既存の同じテーブル保存先でファイルを置き換えました。テーブル定義は維持しながら、その後のクエリが古いキャッシュデータとメタデータを無効化する必要があります。この更新を直接要求するSpark SQL文はどれですか？",
     "options": [
-      "REFRESH TABLEで更新を要求する",
-      "ANALYZE TABLEで統計だけを計算する",
-      "DESCRIBE TABLEで定義を表示する",
-      "DROP TABLEでテーブルを削除する"
+      "REFRESH TABLE analytics.shipments",
+      "ANALYZE TABLE analytics.shipments COMPUTE STATISTICS",
+      "DESCRIBE TABLE analytics.shipments",
+      "DROP TABLE analytics.shipments"
     ],
     "explanation": "REFRESH TABLEは、対象の古いキャッシュデータとメタデータを無効化し、次に必要になったときに再構築させます。テーブル定義の削除や、サイズ統計の計算とは別の操作です。",
     "reasons": [
@@ -3133,10 +3133,10 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-SQL-017": {
-    "stem": "カタログ登録済みのanalytics.clicksについて、列だけでなく保存先とproviderも調べます。全データ走査や変更をせず、既存のカタログ情報を確認するコマンドはどれですか。",
+    "stem": "エンジニアは、カタログに登録されたデータソーステーブルanalytics.clicksを引き継ぎました。取り込みジョブを変更する前に、列に加え、保存先とプロバイダーを確認する必要があります。テーブル全行の走査やデータ変更をせず、既存のカタログオブジェクトを調べるコマンドでなければなりません。使用すべき文はどれですか？",
     "options": [
-      "REFRESH TABLE",
-      "DESCRIBE TABLE EXTENDED",
+      "REFRESH TABLE analytics.clicks",
+      "DESCRIBE TABLE EXTENDED analytics.clicks",
       "SHOW TABLES IN analytics",
       "SELECT * FROM analytics.clicks LIMIT 0"
     ],
@@ -3149,10 +3149,10 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-SQL-018": {
-    "stem": "reportingにsales_daily・sales_monthly・archive_2025・usersがあり、一時ビューはありません。salesまたはarchiveで始まるテーブル名を、データを読まず一覧化する正しいSHOW TABLESの構文はどれですか。",
+    "stem": "reportingというデータベースには、永続テーブルsales_daily、sales_monthly、archive_2025、usersがあります。一時ビューはありません。エンジニアはデータをクエリせず、salesまたはarchiveで始まるテーブル名をカタログから一覧取得したいと考えています。SHOW TABLESの照合構文を正しく使うSpark SQLコマンドはどれですか？",
     "options": [
       "DESCRIBE TABLE reporting.sales*",
-      "SHOW TABLESへ通常のWHEREとLIKE 'sales%'を付ける",
+      "SHOW TABLES IN reporting WHERE tableName LIKE 'sales%' OR tableName LIKE 'archive%'",
       "SHOW TABLES IN reporting LIKE 'sales%|archive%'",
       "SHOW TABLES IN reporting LIKE 'sales*|archive*'"
     ],
@@ -3165,7 +3165,7 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-SQL-019": {
-    "stem": "ヘッダー付きCSVで、引用符内のコメントに改行があり、1レコードが複数の物理行へまたがります。区切り・引用符・スキーマは正しいとします。レコード分断に対応するReaderオプションはどれですか。",
+    "stem": "供給元から、ヘッダーを持ち、テキストフィールドが正しく引用符で囲まれたカンマ区切りファイルが届きます。引用符で囲まれた1つのコメントに改行が含まれる場合があるため、1つの論理レコードが物理的に2行にまたがることがあります。区切り文字、引用符文字、スキーマはすでに正しく設定されています。ファイル全体を1つのテキスト値として扱うことなく、分割されたレコードに対応するCSV読み込みオプションはどれですか？",
     "options": [
       "wholetext=true",
       "lineSep=','",
@@ -3181,12 +3181,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-SQL-020": {
-    "stem": "Spark 3.5.6の組み込みセッションカタログで、LOCATION '/shared/orders'の既存Parquetをraw.ordersとして登録しました。EXTERNALであることも確認済みです。PURGEや独自削除処理なしでDROP TABLEするとどうなりますか。",
+    "stem": "Apache Spark 3.5.6の組み込みセッションカタログで、エンジニアはCREATE TABLE raw.orders USING PARQUET LOCATION '/shared/orders'を実行し、既存のParquetファイルを登録します。カタログのメタデータで、テーブル種別はEXTERNALと確認されています。その後、PURGEも独自の削除フックも使わず、DROP TABLE raw.ordersを実行します。カタログの登録とParquetファイルはどうなりますか？",
     "options": [
-      "登録は残り、ファイルが削除される",
-      "登録は削除されるが、/shared/ordersのファイルは残る",
-      "登録もファイルも削除される",
-      "外部テーブルはDROPできないため失敗する"
+      "カタログの登録は残るが、Parquetファイルは削除される。",
+      "カタログの登録は削除されるが、Parquetファイルは/shared/ordersに残る。",
+      "カタログの登録とParquetファイルの両方が削除される。",
+      "外部テーブルは削除できないため、DROP TABLEは失敗する。"
     ],
     "explanation": "この外部テーブルのDROPでは、カタログ登録だけが削除され、外部のParquetファイルは残ります。管理テーブルや独自の削除処理まで同じと一般化せず、EXTERNALという前提で判断します。",
     "reasons": [
@@ -3197,12 +3197,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-SQL-021": {
-    "stem": "JDBCで、paidだけを読むqueryとpartitionColumn='order_id'を同時に設定して拒否されました。URL・認証・分割数・上下限は設定済みです。ソース側での絞り込みと分割読み取りを両立する修正はどれですか。",
+    "stem": "PostgreSQLのJDBC読み込みでは、URL、認証情報、numPartitions、lowerBound、upperBoundがすでに設定されています。さらに、queryをSELECT order_id, amount FROM source_orders WHERE status = 'paid'、partitionColumnをorder_idに設定すると、Sparkはこの組み合わせを拒否します。データ元でのフィルタリングとパーティション分割した読み込みの両方を維持する必要があります。Spark 3.5.6でサポートされる変更はどれですか？",
     "options": [
-      "queryを残し、dbtableも追加する",
-      "queryを残し、partitionColumnをp.order_idへ変えるだけ",
-      "queryをやめ、別名p付きの副問い合わせをdbtableへ入れ、partitionColumn=p.order_idにする",
-      "partitionColumnと上下限を削除し、queryだけで読む"
+      "queryを残し、dbtable='source_orders'を追加する。partitionColumn='order_id'も維持する。",
+      "queryを残し、dbtableのサブクエリを追加せず、partitionColumnだけを'p.order_id'に置き換える。",
+      "queryを削除し、dbtableを(SELECT order_id, amount FROM source_orders WHERE status = 'paid') p、partitionColumnをp.order_idに設定する。",
+      "partitionColumn、lowerBound、upperBoundを削除し、queryだけを残す。"
     ],
     "explanation": "JDBCのqueryとpartitionColumnは同時指定できません。別名付き副問い合わせをdbtableへ入れれば、DB側での絞り込みを保ち、取得する列で分割して読めます。",
     "reasons": [
@@ -3213,7 +3213,7 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-SQL-022": {
-    "stem": "JDBCの同時接続数は適切ですが、1回に取得する行が少なく往復通信が多い状態です。DBとエグゼキューターは大きな取得バッチを扱えます。並列接続を増やさず、1回の取得行数を制御する設定はどれですか。",
+    "stem": "JDBC読み込みは、すでに許容範囲内の固定数のデータベース接続を使用しています。監視の結果、JDBCドライバーが1回に数行しか取得しておらず、ネットワークの往復が多く発生していることが分かりました。データベースとExecutorは、より大きな結果のバッチを処理できます。並列接続数を増やさず、1回の取得行数を増やしたいと考えています。この動作を直接制御するSpark JDBCの読み込みオプションはどれですか？",
     "options": [
       "spark.sql.shuffle.partitions",
       "numPartitions",
@@ -3229,12 +3229,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-SQL-023": {
-    "stem": "/warehouse/clicks/day=2026-10-01のParquetにはuser_idとevent_typeだけがあり、dayはディレクトリ名にあります。この日のパスだけを読みつつday列を検出したいとき、再帰探索なしで使う設定はどれですか。",
+    "stem": "/warehouse/clicks/day=2026-10-01内のParquetファイルには、user_idとevent_typeしか含まれていません。dayの値はディレクトリ名だけに表現されています。エンジニアはその日のディレクトリだけを読み込みますが、dayも検出されたパーティション列として必要です。再帰的なファイル検索は無効です。入力パスをそのディレクトリに限定しながら、パーティション列を維持する読み込みオプションはどれですか？",
     "options": [
-      "mergeSchema=true",
-      "basePath='/warehouse/clicks'",
-      "recursiveFileLookup=true",
-      "inferSchema=true"
+      "option('mergeSchema', 'true')",
+      "option('basePath', '/warehouse/clicks')",
+      "option('recursiveFileLookup', 'true')",
+      "option('inferSchema', 'true')"
     ],
     "explanation": "basePathでテーブルの基点を指定すると、その下のday=...もパーティション列として検出できます。入力パスは当日のままなので、他の日まで読む必要はありません。",
     "reasons": [
@@ -3245,7 +3245,7 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-SQL-024": {
-    "stem": "非nullの文字列codeから、文字どおりのA_で始まる値を選びます。その後は空でも任意の文字列でもよく、_を任意の1文字として扱ってはいけません。適切なSQL条件はどれですか。",
+    "stem": "商品テーブルには、非NULLのSTRING列codeがあります。アナリストは、文字そのものとしてのA_で始まり、その後に任意の接尾部が続くコードを選択する必要があります。接尾部が空でも対象です。アンダースコアを任意の1文字に一致させてはいけません。この要件を満たすSpark SQLの条件はどれですか？",
     "options": [
       "code LIKE 'A_%'",
       "code LIKE 'A$_%' ESCAPE '$'",
@@ -3261,12 +3261,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-SQL-025": {
-    "stem": "CASE WHEN score IS NULL THEN 'missing' WHEN score>=80 THEN 'high' WHEN score>=50 THEN 'pass' ELSE 'low' ENDを使います。scoreがnull・90・60・40のとき、結果の順番はどれですか。",
+    "stem": "レポートでは、NULLになり得るINT型のscoreを、次のSpark SQL式で分類します。CASE WHEN score IS NULL THEN 'missing' WHEN score >= 80 THEN 'high' WHEN score >= 50 THEN 'pass' ELSE 'low' END。scoreがそれぞれNULL、90、60、40の場合、どのラベルが返されますか？",
     "options": [
-      "missing・pass・pass・low",
-      "low・high・pass・low",
-      "missing・high・pass・low",
-      "null・high・pass・low"
+      "missing, pass, pass, low",
+      "low, high, pass, low",
+      "missing, high, pass, low",
+      "NULL, high, pass, low"
     ],
     "explanation": "CASEは上から順に判定し、最初にtrueの分岐を返します。nullはmissing、90はhigh、60はpass、40はELSEのlowになります。",
     "reasons": [
@@ -3277,10 +3277,10 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-SQL-026": {
-    "stem": "ANSIモード有効のSpark 3.5.6で、raw_idには整数文字列と'bad'などが混在します。他の処理のANSI設定は保ち、有効な値をINT、不正な値をnullへ変える式はどれですか。",
+    "stem": "Spark 3.5.6のセッションでspark.sql.ansi.enabled=trueに設定されています。STRING列raw_idには、有効な整数の文字列と、'bad'のような不正な値が含まれています。他のすべての操作ではANSIモードを有効のまま維持し、有効な値はINTに変換し、不正な値はNULLとして返す必要があります。使用すべきSQL式はどれですか？",
     "options": [
       "CAST(raw_id AS INT)",
-      "COALESCE(CAST(raw_id AS INT),0)",
+      "COALESCE(CAST(raw_id AS INT), 0)",
       "CAST(raw_id AS STRING)",
       "TRY_CAST(raw_id AS INT)"
     ],
@@ -3293,12 +3293,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-DF-001": {
-    "stem": "leftは(a=1,b=10)、rightは(b=20,a=2)で、列の型は同じですが順番が異なります。p=left.union(right)、q=left.unionByName(right)としたとき、right由来の行を(a,b)の順で読むと、それぞれどうなりますか。",
+    "stem": "開発者は、列名と整数型は同じですが、列の順番が異なる2つのDataFrameを受け取りました。Spark 3.5.6で次のコードを実行します。\n\n```python\nleft = spark.createDataFrame([(1, 10)], \"a INT, b INT\")\nright = spark.createDataFrame([(20, 2)], \"b INT, a INT\")\np = left.union(right)\nq = left.unionByName(right)\n```\n\n行の順序は無視し、どちらの結果も列(a, b)として解釈した場合、rightから追加される行は、pとqでそれぞれどうなりますか？",
     "options": [
-      "両方とも列順が異なるため失敗する",
-      "pは(20,2)、qは(2,20)",
-      "pは(2,20)、qは(20,2)",
-      "両方とも(2,20)"
+      "列の順序が異なるため、どちらの操作も失敗する。",
+      "p: (20, 2); q: (2, 20)",
+      "p: (2, 20); q: (20, 2)",
+      "p: (2, 20); q: (2, 20)"
     ],
     "explanation": "unionは列の位置、unionByNameは列名で対応させます。右の値は(b=20,a=2)なので、(a,b)で読むとunionは(20,2)、unionByNameは(2,20)です。",
     "reasons": [
@@ -3309,12 +3309,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-DF-002": {
-    "stem": "注文101のitemsは[7,8]、102は空配列、103はnullです。掲載コードでexplode_outerを適用すると、結果はどうなりますか。",
+    "stem": "バッチDataFrameには、注文ごとに1行があります。品目IDを持たない注文もありますが、下流の監査では、それらの注文をitemがNULLの行として残す必要があります。入力と変換は次のとおりです。\n\n```python\ndf = spark.createDataFrame(\n    [(101, [7, 8]), (102, []), (103, None)],\n    \"order_id INT, items ARRAY<INT>\"\n)\nresult = df.select(\"order_id\", F.explode_outer(\"items\").alias(\"item\"))\n```\n\nFをpyspark.sql.functionsとすると、resultの説明として正しいものはどれですか？",
     "options": [
-      "空配列とnull配列を同時に扱えず失敗する",
-      "2行。102と103は削除される",
-      "3行。102は削除され、103はitem=nullになる",
-      "4行。101が2行、102と103が各1行でitem=nullになる"
+      "空配列とNULL配列を同時には処理できないため、変換は失敗する。",
+      "2行。注文102と103は削除される。",
+      "3行。注文102は削除されるが、注文103はitemがNULLの行になる。",
+      "4行。注文101は2行になり、注文102と103はそれぞれitemがNULLの行になる。"
     ],
     "explanation": "explode_outerは、空配列もnull配列も、値がnullの1行として残します。101から2行、102と103から各1行で、合計4行になります。",
     "reasons": [
@@ -3325,12 +3325,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-DF-003": {
-    "stem": "labels=['red','blue','green']に対し、element_at(labels,1)をfirst、element_at(labels,-1)をlastとして選択します。(first,last)はどれですか。",
+    "stem": "アプリケーションは、空でない配列から、行へ展開することなく最初と最後のラベルを取り出す必要があります。開発者は次のコードを書きます。\n\n```python\ndf = spark.createDataFrame([([\"red\", \"blue\", \"green\"],)], \"labels ARRAY<STRING>\")\nresult = df.select(\n    F.element_at(\"labels\", 1).alias(\"first\"),\n    F.element_at(\"labels\", -1).alias(\"last\")\n)\n```\n\nSpark 3.5.6を使用し、Fはpyspark.sql.functionsとします。1行だけの出力の(first, last)には、どの値が入りますか？",
     "options": [
-      "負の添字を指定できないため失敗する",
-      "('red',null)",
-      "('blue','green')",
-      "('red','green')"
+      "element_atは負の配列インデックスを許可しないため、クエリは失敗する。",
+      "(\"red\", NULL)",
+      "(\"blue\", \"green\")",
+      "(\"red\", \"green\")"
     ],
     "explanation": "element_atの配列添字は1始まりで、負数は末尾から数えます。1はred、-1はgreenです。0始まりの添字を使う別APIと区別します。",
     "reasons": [
@@ -3341,12 +3341,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-DF-004": {
-    "stem": "flagsは{'active':0,'archived':1}というmapです。element_atで'active'と'missing'を取り出した(a,b)はどうなりますか。",
+    "stem": "DataFrameでは、ステータスコードをmap列に保存しています。開発者は、保存されている0と、キーが存在しない場合を区別する必要があります。mapに含まれるのは、次に示す2つの要素だけです。\n\n```python\ndf = spark.createDataFrame(\n    [({\"active\": 0, \"archived\": 1},)],\n    \"flags MAP<STRING, INT>\"\n)\nresult = df.select(\n    F.element_at(\"flags\", F.lit(\"active\")).alias(\"a\"),\n    F.element_at(\"flags\", F.lit(\"missing\")).alias(\"b\")\n)\n```\n\nSpark 3.5.6で、出力行(a, b)の値はどうなりますか？",
     "options": [
-      "(0,null)",
-      "(null,null)",
-      "存在しないキーのため失敗する",
-      "(0,0)"
+      "(0, NULL)",
+      "(NULL, NULL)",
+      "2つ目のキーが存在しないため、クエリは失敗する。",
+      "(0, 0)"
     ],
     "explanation": "mapのelement_atは、存在するキーの値を返し、存在しないキーならnullを返します。格納されている0は有効な値であり、欠損ではありません。",
     "reasons": [
@@ -3357,12 +3357,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-DF-005": {
-    "stem": "values=[10,null,30]の各要素へ、組み込み高階関数transformで2を加えます。行数と欠損値の位置を保つ掲載コードの出力はどれですか。",
+    "stem": "開発者は、入力1行につき出力1行を維持し、欠損した測定値の位置も維持しながら、配列内の各測定値に2を加える必要があります。組み込みの高階関数を使用します。\n\n```python\ndf = spark.createDataFrame([([10, None, 30],)], \"values ARRAY<INT>\")\nresult = df.select(F.transform(\"values\", lambda x: x + F.lit(2)).alias(\"adjusted\"))\n```\n\nFはpyspark.sql.functionsであり、Python UDFは使用していません。どの出力が生成されますか？",
     "options": [
-      "12と32を持つ2行",
-      "[12,2,32]を持つ1行",
-      "[12,null,32]を持つ1行",
-      "[12,32]を持つ1行"
+      "スカラー値12と32を含む2行。",
+      "[12, 2, 32]を含む1行。",
+      "[12, NULL, 32]を含む1行。",
+      "[12, 32]を含む1行。"
     ],
     "explanation": "transformは配列内の各要素へ式を適用し、配列のまま返します。null+2はnullなので、行数も要素数も欠損位置も保たれます。",
     "reasons": [
@@ -3373,12 +3373,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-DF-006": {
-    "stem": "非nullの構造体shipping={city:'Tokyo',postal_code:'OLD'}に、withField('postal_code',lit('104-0001'))を適用してshippingを置き換えます。結果はどれですか。",
+    "stem": "orders DataFrameには、cityとpostal_codeというフィールドを持つstruct列shippingがあります。入力のstructはすべて非NULLです。各行の既存のcityを維持し、郵便番号だけを修正する必要があります。開発者は次のコードを実行します。\n\n```python\nresult = orders.withColumn(\n    \"shipping\",\n    F.col(\"shipping\").withField(\"postal_code\", F.lit(\"104-0001\"))\n)\n```\n\n入力のshippingが{city: \"Tokyo\", postal_code: \"OLD\"}の場合、Spark 3.5.6での正しい出力構造はどれですか？",
     "options": [
-      "{city:null,postal_code:'104-0001'}になる",
-      "最上位にpostal_code列が増え、shippingは変わらない",
-      "{city:'Tokyo',postal_code:'104-0001'}になる",
-      "shippingが文字列'104-0001'になり、cityは消える"
+      "shippingは{city: NULL, postal_code: \"104-0001\"}になる。",
+      "最上位にpostal_code列が追加され、shippingは変更されない。",
+      "shippingは{city: \"Tokyo\", postal_code: \"104-0001\"}になる。",
+      "shippingは文字列\"104-0001\"になり、cityは削除される。"
     ],
     "explanation": "withFieldは構造体内の指定フィールドを追加・置換し、他のフィールドを残します。更新した構造体でshippingを置き換えるため、cityはTokyoのままです。",
     "reasons": [
@@ -3389,12 +3389,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-DF-007": {
-    "stem": "left(id,amount)とright(id,category)を内部結合します。列を後から削除しない場合、join(right,'id')とjoin(right,left.id==right.id)の結果で、idという名前の列はいくつずつですか。",
+    "stem": "2つのDataFrameのスキーマはleft(id INT, amount INT)とright(id INT, category STRING)です。どちらにも、一致する非NULLのIDが含まれています。開発者は次の内部結合を比較します。\n\n```python\nby_name = left.join(right, \"id\", \"inner\")\nby_expr = left.join(right, left.id == right.id, \"inner\")\n```\n\nこの後に列の選択や削除は行いません。Spark 3.5.6で、by_nameとby_exprには、idという名前の列がそれぞれ何個含まれますか？",
     "options": [
-      "どちらも1つ",
-      "列名指定は2つ、条件式指定は1つ",
-      "列名指定は1つ、条件式指定は2つ",
-      "どちらも2つ"
+      "どちらも1個。",
+      "by_nameは2個、by_exprは1個。",
+      "by_nameは1個、by_exprは2個。",
+      "どちらも2個。"
     ],
     "explanation": "共通の列名を文字列で指定する結合では、キーのidは1列にまとまります。左右のColumnを比較する条件式では両方のidが残るため、後で参照するときは区別が必要です。",
     "reasons": [
@@ -3405,12 +3405,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-DF-008": {
-    "stem": "sourceは(1,'a')・(1,'b')・(2,'c')、referenceはID=1が2行です。source.join(reference,'id','left_semi')の結果は、行順を除きどれですか。",
+    "stem": "開発者は、参照DataFrameにIDが存在する入力元の行をすべて残す必要があります。参照側の列を追加したり、参照側の重複によって行を増やしたりしてはいけません。\n\n```python\nsource = spark.createDataFrame([(1, \"a\"), (1, \"b\"), (2, \"c\")], \"id INT, tag STRING\")\nreference = spark.createDataFrame([(1,), (1,)], \"id INT\")\nresult = source.join(reference, \"id\", \"left_semi\")\n```\n\n行の順序を無視すると、Spark 3.5.6でresultにはどの行と列が含まれますか？",
     "options": [
-      "(1,'a')と(1,'b')の2行。列はidとtag",
-      "元の3行すべて。列はidとtag",
-      "(1,'a')だけの1行。列はidとtag",
-      "(1,'a')と(1,'b')が各2回、計4行。列はidとtag"
+      "2行：(1, \"a\")、(1, \"b\")。列はidとtag。",
+      "3行：(1, \"a\")、(1, \"b\")、(2, \"c\")。列はidとtag。",
+      "1行：(1, \"a\")。列はidとtag。",
+      "4行：(1, \"a\")が2回、(1, \"b\")が2回。列はidとtag。"
     ],
     "explanation": "left_semiは右側に一致が存在する左行だけを返し、右側の列は追加しません。右側が重複していても左行を増殖させず、左の2行はそれぞれ残ります。",
     "reasons": [
@@ -3421,12 +3421,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-DF-009": {
-    "stem": "amount DOUBLEの空DataFrameで、グループキーを指定せず、agg(count('*'),sum('amount'))を実行します。nullの置換もしません。結果はどれですか。",
+    "stem": "日次の取り込みジョブでは、レコードが1件も届かない場合があります。それでもレポート用コードは1行の集計結果を出力する必要があります。開発者は、欠損した合計値の表示方法を決める前に、結果の値を知りたいと考えています。\n\n```python\nempty = spark.createDataFrame([], \"amount DOUBLE\")\nsummary = empty.agg(\n    F.count(\"*\").alias(\"row_count\"),\n    F.sum(\"amount\").alias(\"total\")\n)\n```\n\ngroupByのキーや、NULLを置き換える関数は使用しません。Spark 3.5.6でsummaryには何が含まれますか？",
     "options": [
-      "1行で、件数0・合計null",
-      "1行で、件数null・合計null",
-      "入力が空なので0行",
-      "1行で、件数0・合計0.0"
+      "(row_count=0, total=NULL)の1行。",
+      "(row_count=NULL, total=NULL)の1行。",
+      "入力が空なので、0行。",
+      "(row_count=0, total=0.0)の1行。"
     ],
     "explanation": "キーなしの全体集約は、空入力でも1行を返します。COUNT(*)は0ですが、SUMはnullです。業務表示で合計0が必要なら、別途nullを補完します。",
     "reasons": [
@@ -3437,12 +3437,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-DF-010": {
-    "stem": "codes=[4,5,6]、labels=['x']にarrays_zipを適用します。各構造体を(codes,labels)と表すと、結果の配列はどれですか。",
+    "stem": "データ元は、位置で対応するコードとラベルを別々の配列に保存しています。ラベルの配列の方が短い場合もありますが、すべてのコードについて、統合後の配列内での位置を維持する必要があります。開発者は次のコードを実行します。\n\n```python\ndf = spark.createDataFrame([([4, 5, 6], [\"x\"],)], \"codes ARRAY<INT>, labels ARRAY<STRING>\")\nresult = df.select(F.arrays_zip(\"codes\", \"labels\").alias(\"pairs\"))\n```\n\n結果の各structを(codes, labels)と表したとき、Spark 3.5.6のpairsにはどの値が入りますか？",
     "options": [
-      "長さが異なるので全体がnull",
-      "[(4,'x')]",
-      "[(4,'x'),(5,'x'),(6,'x')]",
-      "[(4,'x'),(5,null),(6,null)]"
+      "入力配列の長さが異なるためNULL。",
+      "[(4, \"x\")]",
+      "[(4, \"x\"), (5, \"x\"), (6, \"x\")]",
+      "[(4, \"x\"), (5, NULL), (6, NULL)]"
     ],
     "explanation": "arrays_zipは同じ位置の要素を構造体へまとめます。短い側の不足分をnullで埋めるため、codesの全3要素が維持されます。",
     "reasons": [
@@ -3453,12 +3453,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-DF-011": {
-    "stem": "preferredの0は有効な価格です。coalesce(preferred,backup,lit(-1))を、入力(id,preferred,backup)=(1,null,80)・(2,0,90)・(3,null,null)へ適用すると、ID順のpriceはどれですか。",
+    "stem": "価格のDataFrameには、整数列preferredとbackupがあります。preferredの価格0は有効な値であり、欠損として扱ってはいけません。次の計算を行います。\n\n```python\nresult = df.select(\n    \"id\",\n    F.coalesce(\"preferred\", \"backup\", F.lit(-1)).alias(\"price\")\n)\n```\n\n入力行を(id, preferred, backup)と表すと、(1, NULL, 80)、(2, 0, 90)、(3, NULL, NULL)です。ID順に並べた場合、priceの値はどの順になりますか？",
     "options": [
-      "80・90・0",
-      "null・0・null",
-      "80・90・-1",
-      "80・0・-1"
+      "80, 90, 0",
+      "NULL, 0, NULL",
+      "80, 90, -1",
+      "80, 0, -1"
     ],
     "explanation": "関数のcoalesceは左から最初の非nullを返します。0も非nullなので有効です。全てnullなら最後の定数-1を返します。パーティション数を減らすDataFrame.coalesceとは別のAPIです。",
     "reasons": [
@@ -3469,12 +3469,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-DF-012": {
-    "stem": "eventsの各account_idにつき最新event_tsの完全な1行を残します。同時刻ならevent_id最大を選びます。キーと並び替え列は非null、口座内のevent_idは一意です。適切な式はどれですか。",
+    "stem": "バッチDataFrame eventsには、account_id、event_ts、event_id、payloadがあります。キーと並べ替えに使う値はすべて非NULLで、各account内でevent_idは一意です。結果には、accountごとに完全な行をちょうど1行含める必要があります。event_tsが最新の行を選び、同じ時刻ならevent_idが最大の行を選びます。FとWindowはインポート済みとします。この要件を満たす式はどれですか？",
     "options": [
-      "口座別・event_ts降順・event_id降順のrow_numberで1位を残す",
-      "口座別にmax(event_ts)だけを集計する",
-      "account_idでdropDuplicatesする",
-      "口座別・event_ts昇順・event_id昇順のrow_numberで1位を残す"
+      "events.withColumn(\"rn\", F.row_number().over(Window.partitionBy(\"account_id\").orderBy(F.col(\"event_ts\").desc(), F.col(\"event_id\").desc()))).filter(\"rn = 1\").drop(\"rn\")",
+      "events.groupBy(\"account_id\").agg(F.max(\"event_ts\"))",
+      "events.dropDuplicates([\"account_id\"])",
+      "events.withColumn(\"rn\", F.row_number().over(Window.partitionBy(\"account_id\").orderBy(F.col(\"event_ts\").asc(), F.col(\"event_id\").asc()))).filter(\"rn = 1\").drop(\"rn\")"
     ],
     "explanation": "口座別に、時刻降順・ID降順でrow_numberを付け、1位を残します。並び順が一意に決まるため、最新行のpayloadも確実に維持できます。dropDuplicatesでは残す行を指定できません。",
     "reasons": [
@@ -3485,12 +3485,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-DF-013": {
-    "stem": "DoubleTypeのreadingには通常の数値・NaN・SQLのnullがあります。NaNのときだけtrueとし、通常の数値やnullではtrueにしない式はどれですか。",
+    "stem": "品質チェックで、通常の数値、IEEE NaN、SQL NULLが入り得るDoubleType列readingを調べます。NaNの場合だけtrueとなるBooleanフラグが必要です。通常の数値やSQL NULLをNaNとして判定してはいけません。pyspark.sql.functionsはFとしてインポート済みとします。どの式を選択すべきですか？",
     "options": [
-      "reading.isNull()",
-      "reading.isNotNull()",
-      "F.isnan('reading')",
-      "~F.isnan('reading')"
+      "F.col(\"reading\").isNull()",
+      "F.col(\"reading\").isNotNull()",
+      "F.isnan(\"reading\")",
+      "~F.isnan(\"reading\")"
     ],
     "explanation": "NaNの判定にはisnanを使います。SQLのnullを判定するisNullとは別です。数値の異常と欠損を同じ条件で扱わないようにします。",
     "reasons": [
@@ -3501,12 +3501,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-DF-014": {
-    "stem": "phoneは'+44 (20) 1234-AB56'のような文字列です。UDFを使わず、ASCII数字を元の順で全部残し、英字を含むそれ以外の文字をすべて除く式はどれですか。",
+    "stem": "StringType列phoneには、\"+44 (20) 1234-AB56\"のような値が含まれています。下流システムは、すべてのASCII数字を元の順序で残し、英字を含むそれ以外の文字をすべて削除することを要求しています。UDFは使用できません。pyspark.sql.functionsはFとしてインポート済みとします。このような任意の文字列に対して要件を満たす式はどれですか？",
     "options": [
-      "translateで+・空白・括弧・ハイフンだけを除く",
-      "trimで前後の空白を除く",
-      "regexp_extractで最初の[0-9]+だけを取る",
-      "regexp_replaceで[^0-9]を空文字にする"
+      "F.translate(\"phone\", \"+ ()-\", \"\")",
+      "F.trim(\"phone\")",
+      "F.regexp_extract(\"phone\", \"[0-9]+\", 0)",
+      "F.regexp_replace(\"phone\", \"[^0-9]\", \"\")"
     ],
     "explanation": "regexp_replaceで数字以外を全て空文字へ変えます。regexp_extractは最初の一致部分を取るため、離れた場所の数字を全て連結する要件には合いません。",
     "reasons": [
@@ -3517,12 +3517,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-DF-015": {
-    "stem": "文字列列site・zone・rackをハイフン1つで連結し、nullの値とその区切りは省きます。EU・null・R7ならEU-R7とする、UDFなしの式はどれですか。",
+    "stem": "DataFrameには、StringType列site、zone、rackの3つがあります。非NULLの値を1つのハイフンで結び、NULLのフィールドとその区切りを省いたラベルが必要です。例えばsite=\"EU\"、zone=NULL、rack=\"R7\"なら、\"EU-R7\"にしなければなりません。Fはインポート済みとします。Python UDFを使わずに、この動作を実装する式はどれですか？",
     "options": [
-      "concat_ws('-',site,zone,rack)",
-      "zoneのnullを空文字に置換してからconcat_wsで連結する",
-      "区切りなしのconcat_wsで連結する",
-      "concatで値とハイフンを順に並べる"
+      "F.concat_ws(\"-\", \"site\", \"zone\", \"rack\")",
+      "F.concat_ws(\"-\", \"site\", F.coalesce(\"zone\", F.lit(\"\")), \"rack\")",
+      "F.concat_ws(\"\", \"site\", \"zone\", \"rack\")",
+      "F.concat(\"site\", F.lit(\"-\"), \"zone\", F.lit(\"-\"), \"rack\")"
     ],
     "explanation": "concat_wsはnullを飛ばし、残りの値の間だけに区切りを置きます。nullを先に空文字へ変えると、その空欄の区切りが残ってEU--R7になるため注意します。",
     "reasons": [
@@ -3533,12 +3533,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-DF-016": {
-    "stem": "非nullの数値列priceとstockについて、price>=100かつstock>0の行だけを残します。Pythonの真偽値ではなくColumn条件を作る正しい式はどれですか。",
+    "stem": "バッチDataFrame inventoryには、非NULLの数値列priceとstockがあります。priceが100以上、かつstockが0より大きい行を残す必要があります。PythonのBooleanを評価するのではなく、PySparkのColumn条件式を作成しなければなりません。Fはインポート済みとします。両方の条件を正しく適用する式はどれですか？",
     "options": [
-      "比較条件をPythonのorで結ぶ",
-      "比較条件を|で結ぶ",
-      "price>100とstock>=0を&で結ぶ",
-      "price>=100とstock>0をそれぞれ括弧で囲み、&で結ぶ"
+      "inventory.filter((F.col(\"price\") >= 100) or (F.col(\"stock\") > 0))",
+      "inventory.filter((F.col(\"price\") >= 100) | (F.col(\"stock\") > 0))",
+      "inventory.filter((F.col(\"price\") > 100) & (F.col(\"stock\") >= 0))",
+      "inventory.filter((F.col(\"price\") >= 100) & (F.col(\"stock\") > 0))"
     ],
     "explanation": "Column条件のANDは、比較式をそれぞれ括弧で囲み&で結びます。Pythonのand/orでは、ColumnをPythonの真偽値として評価しようとするため使えません。",
     "reasons": [
@@ -3549,12 +3549,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-DF-017": {
-    "stem": "raw_timeは'25/10/2026 14:05:09'形式の有効な文字列です。UTCのまま、日付と時刻を保つTimestampTypeへ変換する正しい式はどれですか。",
+    "stem": "StringType列raw_timeには、\"25/10/2026 14:05:09\"という形式に厳密に従う有効なタイムスタンプが含まれています。結果は日付と時刻の両方を維持したTimestampType列にする必要があります。セッションはUTCを使用し、タイムゾーンの変換は不要です。pyspark.sql.functionsはFとしてインポート済みとします。正しい入力形式を指定する式はどれですか？",
     "options": [
-      "date_format(raw_time,'dd/MM/yyyy HH:mm:ss')",
-      "to_date(raw_time,'dd/MM/yyyy')",
-      "to_timestamp(raw_time,'MM/dd/yyyy HH:mm:ss')",
-      "to_timestamp(raw_time,'dd/MM/yyyy HH:mm:ss')"
+      "F.date_format(\"raw_time\", \"dd/MM/yyyy HH:mm:ss\")",
+      "F.to_date(\"raw_time\", \"dd/MM/yyyy\")",
+      "F.to_timestamp(\"raw_time\", \"MM/dd/yyyy HH:mm:ss\")",
+      "F.to_timestamp(\"raw_time\", \"dd/MM/yyyy HH:mm:ss\")"
     ],
     "explanation": "入力と同じ形式をto_timestampへ渡します。ddは日、MMは月、HHは24時間、mmは分です。date_formatは文字列の整形、to_dateは日付型なので、戻り値型も確認します。",
     "reasons": [
@@ -3565,12 +3565,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-DF-018": {
-    "stem": "array<array<int>>型のchunksが[[7,8],null,[9]]です。nullは整数要素ではなく、欠けた内側の配列です。事前にnullを除去・置換せずflattenすると、結果はどれですか。",
+    "stem": "DataFrameには、array<array<int>>型のchunks列があります。ある行のchunksは[[7, 8], NULL, [9]]です。このNULLは整数要素ではなく、欠損した部分配列を表します。NULLの部分配列をあらかじめ置換・削除せず、F.flatten(\"chunks\")を評価します。この行では、どの値が生成されますか？",
     "options": [
-      "[7,8,9]",
-      "[7,8,null,9]",
-      "null",
-      "[[7,8],[9]]"
+      "[7, 8, 9]",
+      "[7, 8, NULL, 9]",
+      "NULL",
+      "[[7, 8], [9]]"
     ],
     "explanation": "flattenは入れ子配列を1段平らにしますが、内側の配列自体がnullだと結果全体もnullです。整数要素としてnullが入っているケースとは異なります。",
     "reasons": [
@@ -3581,12 +3581,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-DF-019": {
-    "stem": "salesにはstore・channel・amountがあります。店舗ごとに1行で、webとshopを別列にして金額を合計します。既知のピボット値も明示する正しい式はどれですか。",
+    "stem": "売上のDataFrameにはstore、channel、amountがあります。必要なchannelは\"web\"と\"shop\"だけです。結果はstoreごとに1行とし、金額合計を含むweb列とshop列を別々に持つ必要があります。また、既知のピボット値を明示的に指定したいと考えています。必要な結果を作る式はどれですか？",
     "options": [
-      "channelでgroupByし、storeをweb・shopの値でpivotする",
-      "storeでgroupByし、channelを['web','shop']でpivotしてamountを合計する",
-      "storeとchannelでgroupByして合計する",
-      "存在する前提でweb・shop列をselectして集計する"
+      "sales.groupBy(\"channel\").pivot(\"store\", [\"web\", \"shop\"]).sum(\"amount\")",
+      "sales.groupBy(\"store\").pivot(\"channel\", [\"web\", \"shop\"]).sum(\"amount\")",
+      "sales.groupBy(\"store\", \"channel\").sum(\"amount\")",
+      "sales.select(\"store\", \"web\", \"shop\").groupBy(\"store\").sum()"
     ],
     "explanation": "groupByで店舗ごとの行を作り、pivotでchannelの値を列へ変え、金額を合計します。web・shopという既知の値を明示することで、必要な列も指定できます。",
     "reasons": [
@@ -3597,12 +3597,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-DF-020": {
-    "stem": "event_idとJSON文字列のpayloadを持つDataFrameがあります。payloadは{\"sku\":\"P8\",\"qty\":3}です。event_idを残し、sku STRING・qty INTの解析済み構造体列parsedを追加する式はどれですか。",
+    "stem": "DataFrame eventsにはevent_id列とStringTypeのpayload列があります。payloadの値の例は{\"sku\":\"P8\",\"qty\":3}です。event_idを維持し、skuをSTRING、qtyをINTとして解析したstruct列を追加する必要があります。入力はすでにDataFrameであり、JSONファイルのパスではありません。Fはインポート済みとします。適切な式はどれですか？",
     "options": [
-      "payloadをSTRUCTへ直接castする",
-      "to_jsonでpayloadを処理する",
-      "spark.read.jsonへ文字列'payload'をパスとして渡す",
-      "withColumnでfrom_json(payload,'sku STRING, qty INT')を使う"
+      "events.withColumn(\"parsed\", F.col(\"payload\").cast(\"STRUCT<sku:STRING,qty:INT>\"))",
+      "events.withColumn(\"parsed\", F.to_json(\"payload\"))",
+      "spark.read.schema(\"sku STRING, qty INT\").json(\"payload\")",
+      "events.withColumn(\"parsed\", F.from_json(\"payload\", \"sku STRING, qty INT\"))"
     ],
     "explanation": "既存の文字列列をスキーマ付きJSON構造へ解析するのはfrom_jsonです。read.jsonはファイル読み取り、to_jsonは構造体などを文字列へ変える逆方向の操作です。",
     "reasons": [
@@ -3613,12 +3613,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-DF-021": {
-    "stem": "非nullの文字列配列preferredとavailableには重複があり得ます。両方にある値だけを重複なしの配列にする式はどれですか。結果の順序は問いません。",
+    "stem": "推薦データのDataFrameには、非NULLのarray<string>列preferredとavailableがあります。各配列には重複した値が含まれる場合があります。両方の配列に存在する値だけを、重複を取り除いて含む新しい配列が必要です。結果の配列の順序は問いません。pyspark.sql.functionsはFとしてインポート済みとします。この要件を満たす式はどれですか？",
     "options": [
-      "array_except",
-      "concat",
-      "array_union",
-      "array_intersect"
+      "F.array_except(\"preferred\", \"available\")",
+      "F.concat(\"preferred\", \"available\")",
+      "F.array_union(\"preferred\", \"available\")",
+      "F.array_intersect(\"preferred\", \"available\")"
     ],
     "explanation": "array_intersectは両配列にある要素だけを、重複なしで返します。array_unionは和集合、array_exceptは差集合なので、求める集合を読み分けます。",
     "reasons": [
@@ -3629,12 +3629,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-TUN-001": {
-    "stem": "collect時に結果がdriver.maxResultSizeを超えて失敗しました。詳細行は分散ストレージへ保存でき、ドライバーには小さい集計結果だけあれば十分です。上限の保護も維持する対策はどれですか。",
+    "stem": "バッチジョブがcollect()の実行中に、シリアライズされたタスク結果がspark.driver.maxResultSizeを超えたというメッセージで中断しました。詳細な結果はDriverに収まらないほど大きいですが、アプリケーションがローカルに必要とするのは小さな集計結果だけで、詳細行は分散ストレージに保存してよいものとします。結果サイズの保護設定を維持しながら、この要件を最もよく満たす変更はどれですか？",
     "options": [
-      "詳細は分散Writerで保存し、小さい集計結果だけcollectする",
-      "executor.memoryだけを増やし、全行collectは変えない",
-      "全結果をcacheしてから全詳細行をcollectする",
-      "maxResultSizeを0にして、全詳細行をcollectし続ける"
+      "分散処理するDataFrameライターで詳細行を書き込み、小さな集計結果だけをcollectする。",
+      "spark.executor.memoryを増やし、collect()はそのままにする。",
+      "すべての詳細行をcollectする前に、結果全体をキャッシュする。",
+      "spark.driver.maxResultSizeを0に設定し、すべての詳細行を引き続きcollectする。"
     ],
     "explanation": "maxResultSizeはドライバーへ返す結果サイズの保護です。無制限にしてもメモリに収まるとは限りません。詳細は分散保存し、必要な小さい集計だけを取得します。",
     "reasons": [
@@ -3645,7 +3645,7 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-TUN-002": {
-    "stem": "YARNのエグゼキューターが、JVMヒープには余裕があるのにコンテナーの物理メモリ超過で停止します。余分な使用量の主因はPythonワーカーで、executor.pyspark.memoryは未設定です。JVM外メモリの許容量を直接増やす設定はどれですか。",
+    "stem": "PySparkアプリケーションがYARNコンテナーで動作しています。JVMヒープの使用量は上限を十分下回っているのに、コンテナーの物理メモリ上限を超えたため、Executorが強制終了されます。ログでは、追加のメモリの大部分をPython Workerプロセスが使用しています。spark.executor.pyspark.memoryは未設定です。このJVM外のメモリをカバーするコンテナーの許容量を、最も直接的に増やす設定はどれですか？",
     "options": [
       "spark.driver.memory",
       "spark.sql.autoBroadcastJoinThreshold",
@@ -3661,12 +3661,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-TUN-003": {
-    "stem": "成功したソートステージで、UIのshuffle spillはmemory=600MB、disk=90MBです。出力検証も成功しました。差分510MBがレコード消失を意味するという主張への正しい説明はどれですか。",
+    "stem": "完了したソートのステージについて、Spark UIにはshuffle spill (memory)が600 MB、shuffle spill (disk)が90 MBと表示されています。すべてのタスクは成功し、出力の検証にも合格しています。エンジニアは、この差が510 MBのレコードの消失を示すと主張しています。これらの指標の正しい解釈はどれですか？",
     "options": [
-      "メモリ側は展開した表現、ディスク側は直列化した表現なので、サイズ差だけで欠損とは言えない",
-      "小さいディスク値は重複行を削除した証拠",
-      "memoryはドライバーのヒープ、diskは全ディスク容量",
-      "spillがあれば、成功表示でもステージは必ず失敗している"
+      "これらはデシリアライズされたメモリ内のデータ量と、シリアライズされたディスク上のデータ量を表すため、サイズの差だけではレコード消失の証拠にならない。",
+      "ディスク側の値が小さいことは、ソート中にSparkが重複レコードを削除した証拠である。",
+      "メモリ側はDriverのヒープを測り、ディスク側は全Executorのローカルディスク容量を測っている。",
+      "タスクのステータスが成功でも、ディスクへのスピルはソートのステージが失敗したことを意味する。"
     ],
     "explanation": "memory側のspillはメモリ上に展開した表現、disk側は直列化した表現のサイズです。同じバイト表現ではないため、差を消失したデータ量とは解釈できません。",
     "reasons": [
@@ -3677,12 +3677,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-TUN-004": {
-    "stem": "SQLの列指向キャッシュを維持したいのですが、1つのキャッシュバッチを構築するときにエグゼキューターがメモリ不足になります。データとクラスター規模を変えず、1バッチの行数を直接減らす設定はどれですか。",
+    "stem": "DataFrameを繰り返し再利用するため、チームはSQLの列指向キャッシュを維持したいと考えています。Executorが、メモリ内の1つの列指向キャッシュバッチを構築中にメモリ不足になります。論理的なデータとクラスターの規模は変えられません。各キャッシュバッチにまとめる行数を直接減らす設定変更はどれですか？",
     "options": [
-      "files.maxRecordsPerFileを増やす",
-      "inMemoryColumnarStorage.batchSizeを減らす",
-      "autoBroadcastJoinThresholdを増やす",
-      "inMemoryColumnarStorage.batchSizeを増やす"
+      "spark.sql.files.maxRecordsPerFileを増やす。",
+      "spark.sql.inMemoryColumnarStorage.batchSizeを減らす。",
+      "spark.sql.autoBroadcastJoinThresholdを増やす。",
+      "spark.sql.inMemoryColumnarStorage.batchSizeを増やす。"
     ],
     "explanation": "inMemoryColumnarStorage.batchSizeは、列指向キャッシュの1バッチに入れる行数を制御します。小さくすると構築時のメモリ負担を抑えられますが、圧縮率などとの兼ね合いもあります。",
     "reasons": [
@@ -3693,12 +3693,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-TUN-005": {
-    "stem": "下流システムは1データファイルが500000行を超えると拒否します。Parquetの出力パーティション数やバイト数の厳密な指定は不要です。単一パーティション化せず、1ファイルの行数を直接制限する設定はどれですか。",
+    "stem": "下流の読み込みシステムは、500000件を超えるレコードを含む出力データファイルを拒否します。Sparkのバッチ処理は、比較的均等な多数のパーティションからParquetを書き込みますが、一部のパーティションのレコード数はこの制限を超えています。正確なファイル数やバイトサイズの指定は不要です。全データを1つのパーティションに集めることなく、出力ファイルごとのレコード数を直接制限する設定はどれですか？",
     "options": [
-      "files.maxPartitionBytes=500000",
-      "files.openCostInBytes=500000",
-      "files.maxRecordsPerFile=500000",
-      "shuffle.partitions=500000"
+      "spark.sql.files.maxPartitionBytes=500000",
+      "spark.sql.files.openCostInBytes=500000",
+      "spark.sql.files.maxRecordsPerFile=500000",
+      "spark.sql.shuffle.partitions=500000"
     ],
     "explanation": "maxRecordsPerFileは1出力ファイルの最大行数です。同じタスクが複数ファイルを書くこともあり、ファイル数やバイト数を厳密に決める設定ではありません。",
     "reasons": [
@@ -3709,12 +3709,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-TUN-006": {
-    "stem": "V1のパーティション付きParquetを/reportsへ書き直します。replacement_dfには対象日の完全な置換データがあり、それ以外の日は維持します。Hive SerDeやDeltaではありません。新しい行があるパーティションだけ置換する設定はどれですか。",
+    "stem": "Spark 3.5.6のバッチ処理で、/reportsのパーティション分割されたParquetデータソースを書き直します。replacement_dfには対象日の完全な置き換えデータが入っており、そのDataFrameに含まれる日以外の既存のdayパーティションは変更せずに残す必要があります。対象はV1のファイルデータソースであり、Hive SerDeテーブルやDeltaテーブルではありません。新しい行を受け取るパーティションだけを置き換えるライター設定はどれですか？",
     "options": [
-      "overwriteとpartitionOverwriteMode='dynamic'を使う",
-      "overwriteとpartitionOverwriteMode='static'を使う",
-      "appendで追加する",
-      "ignoreで既存先を無視する"
+      "replacement_df.write.mode('overwrite').option('partitionOverwriteMode', 'dynamic').partitionBy('day').parquet('/reports')",
+      "replacement_df.write.mode('overwrite').option('partitionOverwriteMode', 'static').partitionBy('day').parquet('/reports')",
+      "replacement_df.write.mode('append').partitionBy('day').parquet('/reports')",
+      "replacement_df.write.mode('ignore').partitionBy('day').parquet('/reports')"
     ],
     "explanation": "dynamicのパーティション上書きは、新しいデータが入るパーティションだけを置換します。入力がその日の完全な置換データという前提が重要で、appendのような単純追加とは異なります。",
     "reasons": [
@@ -3725,12 +3725,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-TUN-007": {
-    "stem": "Hiveメタストアのテーブルサイズ統計が古く、結合の推定が不適切です。全行の値を走査せず、サイズのバイト数を再収集するSQLはどれですか。",
+    "stem": "Hiveメタストアのテーブルで、データ更新後もカタログのサイズ統計が古いままです。オプティマイザーは結合計画時に現実的でないサイズを見積もります。結合戦略を強制する前に、すべての行の値を走査せず、テーブルのバイトサイズを再計算したいと考えています。Spark SQLで、この統計を直接収集するコマンドはどれですか？",
     "options": [
-      "REFRESH TABLE",
-      "DESCRIBE TABLE EXTENDED",
-      "ANALYZE TABLE ... COMPUTE STATISTICS NOSCAN",
-      "ANALYZE TABLE ... COMPUTE STATISTICS FOR ALL COLUMNS"
+      "REFRESH TABLE warehouse.dimension",
+      "DESCRIBE TABLE EXTENDED warehouse.dimension",
+      "ANALYZE TABLE warehouse.dimension COMPUTE STATISTICS NOSCAN",
+      "ANALYZE TABLE warehouse.dimension COMPUTE STATISTICS FOR ALL COLUMNS"
     ],
     "explanation": "COMPUTE STATISTICS NOSCANは、全行の値を走査せず、テーブルのバイト数を収集します。統計を作り直すANALYZEと、既存情報を表示するDESCRIBEを区別します。",
     "reasons": [
@@ -3741,12 +3741,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-TUN-008": {
-    "stem": "偏った書き込み結果にREBALANCEヒントを付けましたが、AQEが無効のため効きません。極端に小さい・大きい出力パーティションを減らす、このベストエフォートのヒントを使うために必要な変更はどれですか。",
+    "stem": "SQLの書き込み処理に、偏りの大きいクエリ結果が渡されます。エンジニアは、正確なファイル数は要求せず、極端に小さい出力パーティションや大きい出力パーティションを避けるためにREBALANCEヒントを追加します。しかしspark.sql.adaptive.enabledがfalseなので、ヒントに効果がありません。Spark 3.5.6がこのベストエフォートのヒントを考慮するために必要な変更はどれですか？",
     "options": [
-      "AQEは無効のままshuffle.partitionsを1にする",
-      "spark.sql.adaptive.enabledを有効にする",
-      "出力全体のBROADCASTへ変更する",
-      "列指向キャッシュの圧縮を無効にする"
+      "AQEを無効のまま、spark.sql.shuffle.partitionsを1にする。",
+      "そのクエリでspark.sql.adaptive.enabledを有効にする。",
+      "出力全体に対し、REBALANCEをBROADCASTに置き換える。",
+      "spark.sql.inMemoryColumnarStorage.compressedを無効にする。"
     ],
     "explanation": "REBALANCEヒントはAQEが無効だと無視されます。AQEを有効にすると、偏りの分割などで出力パーティションを調整しますが、正確なファイル数を保証するものではありません。",
     "reasons": [
@@ -3757,12 +3757,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-STR-001": {
-    "stem": "2つの入力ストリームのwatermarkが12:20と12:05です。既定の複数watermarkポリシーと、新規クエリでmaxへ変える場合の違いはどれですか。",
+    "stem": "クエリは、それぞれイベント時刻のウォーターマークを持つ2つのストリーミング入力を結合します。ある時点で、入力ごとに計算されたウォーターマークは、一方が12:20、もう一方が12:05です。クエリはSparkの複数ウォーターマークに対するデフォルトのポリシーを使用しています。チームは、新しくデプロイするクエリでポリシーをmaxに変えることを検討しています。2つのポリシーの比較として正しい説明はどれですか？",
     "options": [
-      "既定は12:20で、maxは12:05になり遅い入力を守る",
-      "既定は12:05で、maxなら12:20へ進むが遅い入力のデータを落とすリスクがある",
-      "どちらも常に最速入力の12:20だけを使う",
-      "どちらも全体のwatermarkを決めない"
+      "デフォルトの全体ウォーターマークは12:20であり、maxにすると12:05となって、遅い入力が保護される。",
+      "デフォルトの全体ウォーターマークは12:05であり、maxにすると12:20まで進められるが、遅い入力のデータを破棄するリスクがある。",
+      "最も速い入力だけが全体ウォーターマークに影響するため、どちらのポリシーでも常に12:20になる。",
+      "どちらのポリシーも個別のウォーターマークを永久に維持し、全体ウォーターマークを求めることはない。"
     ],
     "explanation": "既定はminなので、遅い入力の12:05が全体のwatermarkです。maxなら12:20へ進められますが、遅い入力のデータを遅延扱いで捨てるリスクが高まります。",
     "reasons": [
@@ -3773,12 +3773,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-STR-002": {
-    "stem": "foreachBatchで外部DBへ追記します。同じチェックポイントからの再開で、同じバッチが再度コールバックされる可能性があります。DBはトランザクション対応です。同じバッチの二重確定を防ぐ実装はどれですか。",
+    "stem": "1つのマイクロバッチクエリが、foreachBatchを使って外部データベースに結果を追記します。障害後に同じチェックポイントから再開すると、同じバッチがコールバックに再び渡される場合があります。データベースはトランザクションをサポートします。同じバッチの出力を重複してコミットしないようにする必要があります。この要件に対応する実装はどれですか？",
     "options": [
-      "batchIdを永続的な重複判定キーにし、出力と処理済み印を同じトランザクションで確定する",
-      "appendモードだけで全外部コールバックのexactly-onceを保証する",
-      "呼び出すたびに乱数IDを作り、別バッチとして扱う",
-      "処理済みIDを、再起動で消えるPython setだけへ保存する"
+      "渡されたbatchIdを永続的な重複排除キーにし、出力とバッチ処理済みの印を、まとめて原子的にコミットする。",
+      "outputMode(\"append\")を使用する。この設定だけで外部コールバックはすべてExactly-Onceになる。",
+      "コールバックの呼び出しごとにランダムな新しい識別子を生成し、それぞれを新しいバッチとして扱う。",
+      "処理済みのバッチIDを、Driverの再起動時に消去されるローカルなPythonのsetだけに保存する。"
     ],
     "explanation": "foreachBatchは既定ではat-least-onceです。同じbatchIdの再実行を永続的に識別し、出力と処理済み印を原子的に確定することで、二重出力を防ぎます。",
     "reasons": [
@@ -3789,12 +3789,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-STR-003": {
-    "stem": "集約なしのeventsはconsoleへのappend出力が可能です。writer=events.writeStream.format('console')を作っただけで、クエリは未開始です。開始してからメインプログラムを終了待ちにする手順はどれですか。",
+    "stem": "コマンドラインのPySparkプログラムで、集計を行わず状態も持たないeventsというストリーミングDataFrameを定義します。このDataFrameはコンソールへのappend出力をサポートしています。行の書き込みを開始し、クエリの実行中はメインプログラムを待機させる必要があります。現時点ではwriter = events.writeStream.format(\"console\")を作成しただけで、クエリはまだ開始していません。実行を開始し、その後に終了を待つための正しい次のステップはどれですか？",
     "options": [
-      "query=writer.start()の後、query.awaitTermination()",
-      "writerをqueryとしてstopしてから待つ",
-      "writer.awaitTermination()の後にstartする",
-      "events.collect()を呼んでからstartする"
+      "query = writer.start(); query.awaitTermination()",
+      "query = writer; query.stop(); query.awaitTermination()",
+      "writer.awaitTermination(); writer.start()",
+      "events.collect(); writer.start()"
     ],
     "explanation": "Writerは出力設定を表すだけです。startで実行を開始してStreamingQueryを受け取り、そのquery.awaitTerminationで終了を待ちます。",
     "reasons": [
@@ -3805,12 +3805,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-STR-004": {
-    "stem": "購入ストリームeventsと静的な商品productsを、events.join(products,'product_id','left_outer')で結合します。商品未登録の購入も残し、購入のない静的商品は不要です。正しい説明はどれですか。",
+    "stem": "ストリーミングDataFrame eventsには新しい購入が含まれ、静的なDataFrame productsには商品説明が含まれます。静的DataFrameに商品IDが存在しない購入も含め、すべての購入を出力する必要があります。購入のない静的な商品を出力する必要はありません。Spark 3.5.6 Structured Streamingでのevents.join(products, \"product_id\", \"left_outer\")について、正しい説明はどれですか？",
     "options": [
-      "不一致購入の出力にはproducts側のwatermarkが必須",
-      "未購入商品も出力するのでfull outerと同じ",
-      "対応する非状態保持のstream-static結合であり、不一致の購入は商品列nullで残る",
-      "ストリームを含む外部結合は両入力がstreamでなければ非対応"
+      "一致しない購入を出力する前に、productsにウォーターマークを設定する必要がある。",
+      "一致しない静的商品と一致しない購入の両方を出力するため、完全外部結合と同じになる。",
+      "サポートされている状態を持たないストリーム・静的データの結合であり、events側の不一致行も、商品フィールドをNULLとして維持する。",
+      "ストリームを含む外部結合では両側がストリーミングでなければならないため、サポートされない。"
     ],
     "explanation": "ストリームを左、静的DataFrameを右にしたleft outerは対応しています。このstream-static結合自体は状態を保持せず、一致しない購入は商品列nullで出ます。",
     "reasons": [
@@ -3821,12 +3821,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-STR-005": {
-    "stem": "impressionsストリームをclicksへ左外部結合します。同じ広告IDで、表示時刻から1時間以内のクリックだけが対象です。時刻と処理は進み続けます。今後一致し得ない表示をクリック列nullで出すために必要な設計はどれですか。",
+    "stem": "広告のクエリは、表示イベントのストリームをクリックのストリームへ、広告IDだけを使って左外部結合しています。クリックを一致させるのは、そのイベント時刻が表示時刻から1時間後までの範囲内にある場合だけです。入力のイベント時刻とマイクロバッチの実行は継続して進んでいます。該当するクリックがもう到着し得ない場合、最終的にクリック側のフィールドをNULLとした表示イベントをSparkから出力したいと考えています。必要なイベント時刻の情報を提供する設計はどれですか？",
     "options": [
-      "IDの等価条件だけにし、メモリを増やす",
-      "watermarkなしで、両入力を時刻順に並べる",
-      "適切なwatermarkと、1時間のイベント時刻範囲を結合条件へ加える",
-      "時間条件なしでcompleteモードにする"
+      "広告IDだけの等価結合を適用し、Executorメモリを増やす。",
+      "ウォーターマークを使わず、等価結合の前に各ストリームをタイムスタンプで並べ替える。",
+      "適切なイベント時刻のウォーターマークを追加し、結合条件に1時間のイベント時刻の範囲を含める。",
+      "時間の制約を何も追加せず、outputMode(\"complete\")を使う。"
     ],
     "explanation": "時刻範囲で『今後一致し得るクリック』を限定し、watermarkで待てる範囲を判断します。IDだけの条件やメモリ増量では、未一致を確定できません。null行の出力はバッチとwatermarkの進行に依存します。",
     "reasons": [
@@ -3837,12 +3837,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-STR-006": {
-    "stem": "既知の列order_id INT・amount DOUBLEを持つCSVディレクトリを監視します。streaming.schemaInferenceは既定のfalseのままで、推論を有効にせず一定のスキーマを渡すReaderはどれですか。",
+    "stem": "開発者は、バッチリーダーではCSVディレクトリを正常に読み込めますが、今度はspark.readStreamでそのディレクトリを監視したいと考えています。入力の列はorder_id INT、amount DOUBLEと分かっています。セッションではspark.sql.streaming.schemaInference=falseというデフォルト設定を維持します。ストリーミングのスキーマ推論を有効にせず、一貫したスキーマを指定する適切なリーダーはどれですか？",
     "options": [
-      "readStream.schema(...)に列定義を渡し、header=trueでcsvを読む",
-      "スキーマなしでheader=trueだけを指定する",
-      "セッション設定を変えず、inferSchema=trueだけ指定する",
-      "スキーマなしでmaxFilesPerTrigger=1だけを追加する"
+      "spark.readStream.schema(\"order_id INT, amount DOUBLE\").option(\"header\", True).csv(path)",
+      "spark.readStream.option(\"header\", True).csv(path)",
+      "spark.readStream.option(\"inferSchema\", True).csv(path)を使い、スキーマの指定もセッション設定の変更も行わない。",
+      "spark.readStream.option(\"header\", True).option(\"maxFilesPerTrigger\", 1).csv(path)"
     ],
     "explanation": "ファイルのストリーム読み取りでは、既定で明示スキーマが必要です。headerは列名、maxFilesPerTriggerは入力ファイル数なので、列の型の指定にはなりません。",
     "reasons": [
@@ -3853,12 +3853,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-STR-007": {
-    "stem": "状態付き集約をshuffle.partitions=24と永続チェックポイントで動かしていました。停止後、同じ状態と進捗を保って48へ変えて再開する案への適切な対応はどれですか。",
+    "stem": "状態を持つ集計が、spark.sql.shuffle.partitions=24と永続チェックポイントを使って正常に動作していました。チームはクエリを停止し、設定を48に変えて、同じチェックポイントから再起動する案を考えています。状態と処理済みのソースの進捗は維持する必要があります。Spark 3.5.6の文書化された制約によると、適切な対応はどれですか？",
     "options": [
-      "appendモードなら以前の状態分割は無関係になる",
-      "既存状態と互換の分割数を維持し、同じチェックポイントで48へ変えない",
-      "offsetログだけを削除して新しい分割数を推論させる",
-      "復旧が状態を自動再分割するので無条件に48へ変える"
+      "outputModeをappendに変更する。これによって以前の状態のパーティション分割は関係なくなる。",
+      "状態のパーティション数を既存チェックポイントと互換性のあるまま維持し、この状態付きクエリの再開時には設定を48へ変更しない。",
+      "オフセットログのファイルだけを削除して残りのチェックポイントファイルを残し、新しい状態パーティション数をSparkに推論させる。",
+      "チェックポイントからの復旧は制限なく既存の状態を自動的に再パーティション分割するため、48に変更する。"
     ],
     "explanation": "既存の状態はキーのハッシュで分割されています。同じチェックポイントから状態を保って再開する場合、shuffle.partitionsを24から48へ変更できません。互換のある分割数を維持します。",
     "reasons": [
@@ -3869,12 +3869,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-STR-008": {
-    "stem": "起動時点で利用可能な全ファイルを、maxFilesPerTriggerに応じて複数マイクロバッチで処理し、終了したいとします。対応ソースで使うトリガーはどれですか。",
+    "stem": "定期実行するファイルストリーミングジョブでは、実行開始時に利用可能なすべてのファイルを処理してから、自動的に終了する必要があります。maxFilesPerTriggerが設定されているため、処理は複数のマイクロバッチに分かれる場合があります。ファイルソースはAvailableNowをサポートしています。この要件に最も適したwriteStreamのトリガーはどれですか？",
     "options": [
-      "processingTime='10 seconds'",
-      "availableNow=True",
-      "continuous='1 second'",
-      "トリガーを省略して待ち続ける"
+      ".trigger(processingTime='10 seconds')",
+      ".trigger(availableNow=True)",
+      ".trigger(continuous='1 second')",
+      "トリガーを省略し、追加のファイルを無期限に待つようにする。"
     ],
     "explanation": "AvailableNowは、開始時点で利用可能なデータを処理して自動終了します。maxFilesPerTriggerに従い、複数のマイクロバッチへ分けて処理することもできます。",
     "reasons": [
@@ -3885,7 +3885,7 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-STR-009": {
-    "stem": "1回以上のマイクロバッチが完了したPySparkのStreamingQueryで、停止や終了待ちをせず、最新完了トリガーの入力行数と処理速度をPython辞書で得るプロパティはどれですか。",
+    "stem": "queryという実行中のPySpark StreamingQueryが、少なくとも1つのマイクロバッチを完了しています。ストリームを停止せず、終了を待つこともなく、最後に完了したトリガーの入力行数と処理レートをPythonの辞書として取得したいと考えています。これらの進捗指標を提供するプロパティはどれですか？",
     "options": [
       "query.lastProgress",
       "query.isActive",
@@ -3901,12 +3901,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-STR-010": {
-    "stem": "Kafkaクエリを停止し、同じ有効なチェックポイントで再開します。startingOffsetsをlatestからearliestへ変えました。元データは保持され、新パーティションもありません。どこから読みますか。",
+    "stem": "KafkaのStructured Streamingクエリには、有効な既存チェックポイントがあり、ソースのオフセットが保持されています。一部のレコードを処理した後、クエリを停止しました。同じ論理クエリを同じチェックポイントで再開しますが、startingOffsetsを'latest'から'earliest'へ変更します。Kafkaのデータは期限切れになっておらず、新しいパーティションも追加されていません。再開したクエリはどこから読み込みますか？",
     "options": [
-      "startingOffsetsが常に優先され、最古から読む",
-      "最新のoffsetから読み、未処理分を飛ばす",
-      "既存チェックポイントに記録されたoffsetから再開する",
-      "毎バッチすべてoffset=0から読む"
+      "startingOffsetsは常にチェックポイントより優先されるため、Kafkaに残っている最も古いレコードから。",
+      "Kafkaの最新オフセットから読み込み、未処理レコードをすべて飛ばす。",
+      "既存のチェックポイントに記録されたオフセットから。",
+      "マイクロバッチごとにオフセット0から。"
     ],
     "explanation": "startingOffsetsは新しいクエリの開始位置です。同じチェックポイントから再開するときは、保存済みoffsetが使われ、設定変更だけで最初からの読み直しにはなりません。",
     "reasons": [
@@ -3917,12 +3917,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-STR-011": {
-    "stem": "JSONファイルのストリームで、上流が監視ディレクトリ内のファイルへ直接書き続けるため、未完成ファイルを発見する恐れがあります。推奨される到着方法はどれですか。",
+    "stem": "本番のStructured Streamingクエリが、明示的なスキーマを使い、入力ディレクトリからJSONファイルを読み込みます。現在、上流システムはそのディレクトリ内のファイルに直接書き込んでいるため、Sparkが書き込み途中のファイルを検出する可能性があります。未完成のファイルをSparkが読まないようにする必要があります。ファイルソースで推奨される受け渡し方法はどれですか？",
     "options": [
-      "同じファイルへ永久に追記し続ける",
-      "処理済みファイルを同じ名前で繰り返し上書きする",
-      "maxFilesPerTrigger=1で未完成ファイルを完成扱いにする",
-      "監視外で完成させ、対応するストレージ機構で一意名の新ファイルとして原子的に公開する"
+      "入力ディレクトリ内の1つのファイルに、永久に追記し続ける。",
+      "すでに処理済みのファイルを、同じ名前で繰り返し上書きする。",
+      "maxFilesPerTriggerを1に減らす。これによって書き込み途中のファイルが完成する。",
+      "各新規ファイルを監視対象ディレクトリの外で完全に書き終えてから、その操作をサポートするストレージの仕組みを使い、一意な名前で監視対象へ原子的に配置する。"
     ],
     "explanation": "ファイルを監視先の外で完成させてから、原子的に到着させます。発見時点で内容を完成させることが要点です。具体的な配置方法は、ストレージが対応する仕組みに合わせます。",
     "reasons": [
@@ -3933,12 +3933,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-CON-001": {
-    "stem": "Spark Connectクライアントで数TBのリモートテーブルから2列を選び、日付で絞ってlimit(10).collect()します。クライアントがサーバーへ送るものはどれですか。",
+    "stem": "アナリストは、ノートPC上のSpark Connectクライアントを使い、数テラバイトのリモートテーブルを読み込みます。クライアントで、2列を選択して日付で絞り込むDataFrameの式を構築し、limit(10).collect()で小さな結果を取得します。クライアントからSpark Connectサーバーに送られる要求について、正しい説明はどれですか？",
     "options": [
-      "全テーブルを一度ダウンロードし、絞ったコピーを送る",
-      "エグゼキューター用の機械語バイナリーをパーティションごとに送る",
-      "Python変数名だけを送り、サーバーがクライアントのメモリを直接読む",
-      "DataFrame操作を未解決の論理計画として送り、サーバーが解決・実行する"
+      "クライアントは、まずリモートテーブル全体をダウンロードし、絞り込んだコピーをアップロードする。",
+      "クライアントは、クエリをExecutorの機械語へ直接コンパイルし、パーティションごとに1つのバイナリーを送る。",
+      "クライアントはPythonの変数名だけを送り、DriverがノートPCのプロセスメモリを読んで内容を取得する。",
+      "クライアントはDataFrameの操作を未解決の論理計画として符号化し、サーバーがその計画を解決して実行する。"
     ],
     "explanation": "ConnectクライアントはDataFrame操作を未解決の論理計画として送り、サーバーが解決・最適化・実行します。大きいテーブルを先にクライアントへ集める方式ではありません。",
     "reasons": [
@@ -3949,12 +3949,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-CON-002": {
-    "stem": "Spark Connectで処理済みの結果行を受信する際の、標準の転送方法とデータ表現はどれですか。クエリの送信時ではなく、結果の受信時を問います。",
+    "stem": "開発者は、PythonのSpark ConnectクライアントとリモートのSparkサーバー間のネットワーク通信を調べています。サーバーはDataFrameクエリの実行を完了し、クライアントが結果行を受信しています。調べたいのは、クエリの送信時の表現ではなく、標準の転送方式と結果の表現です。Spark 3.5.6のSpark Connectについて、正しい説明はどれですか？",
     "options": [
-      "エグゼキューターのJVMオブジェクトへの直接参照",
-      "gRPC経由で届く、Apache Arrow形式の行バッチ",
-      "送信時と同じ未解決の論理計画",
-      "必ず単一CSVへ書き、共有ファイルシステム経由で読む"
+      "結果は、クライアントプロセス内でExecutorのJVMオブジェクトを直接参照する形で共有される。",
+      "結果はApache Arrowで符号化された行のバッチとして、gRPCを通じてストリーミング転送される。",
+      "結果は、クエリ送信時と同じ未解決の論理計画として返される。",
+      "結果は必ず1つのCSVファイルに書き込まれ、クライアントは共有ファイルシステムを通じて読む必要がある。"
     ],
     "explanation": "要求を送るときは論理計画、結果を受け取るときはArrow形式のバッチです。どちらもgRPCを使いますが、送受信する内容の役割を区別します。",
     "reasons": [
@@ -3965,12 +3965,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-CON-003": {
-    "stem": "別プロセスのConnectクライアントを使う2チームが、ローカルの帳票整形だけに異なるPythonライブラリ版を使います。UDFやタスク内では使いません。一方のローカル処理はメモリも多く使います。分離の利点はどれですか。",
+    "stem": "2つのチームが、別々のSpark Connectクライアントプロセスから同じSparkサービスに接続します。クライアント側でのレポート整形にだけ使用するPythonライブラリについて、異なるバージョンが必要です。このライブラリはUDFやExecutorのタスクからは呼ばれません。また、一方のクライアントはローカルでメモリを多く使うレポート整形を行います。この状況で、クライアントとサーバーの分離から得られる利点はどれですか？",
     "options": [
-      "両ライブラリをドライバーへ同じ版で導入しなければならない",
-      "クライアントのメモリ割り当てがエグゼキューターへ自動移動する",
-      "各チームに専用クラスターが自動作成される",
-      "クライアントの依存関係とローカルメモリ使用を別プロセスに隔離でき、帳票ライブラリをドライバーへ置かずに済む"
+      "両方の整形用ライブラリを、完全に同じバージョンでSpark DriverのPython環境にインストールしなければならない。",
+      "クライアント側で確保したメモリは、自動的にSpark Executorのストレージメモリへ移される。",
+      "各チームに、独立したExecutorリソースを持つ専用のSparkクラスターが自動的に与えられる。",
+      "整形用ライブラリをDriverプロセスに入れずに、クライアントの依存関係とローカルのメモリ使用をチームごとに別プロセスへ分離できる。"
     ],
     "explanation": "クライアントだけで使うライブラリやローカルのメモリは、ドライバーから別プロセスへ分離できます。UDFとしてサーバー側で使う依存関係は、別途実行先への配布が必要です。",
     "reasons": [
@@ -3981,12 +3981,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-CON-004": {
-    "stem": "既存PySparkアプリをSpark Connectへ移します。あまり使わないDataFrameメソッドが1つあり、従来APIで使えるだけではConnect対応と断定できません。置換や移行テストの前に行う確認はどれですか。",
+    "stem": "チームは、既存のPySpark DataFrameアプリケーションをSpark Connectへ移行する予定です。大半の変換はサポートされていますが、アプリケーションはあまり一般的でないDataFrameメソッドを1つ使用しています。従来の同一プロセス型のPySpark APIで使えるからといって、対象リリースのSpark Connectでも使えるとは仮定できません。代替手段を選んだり、移行テストを実行したりする前に、最初に行う最も確かな確認はどれですか？",
     "options": [
-      "すべてpandasへ委譲されるので、pandasの対応だけ見る",
-      "対象リリースのAPIリファレンスで、そのメソッドのConnect対応表記を確認する",
-      "クライアントにJavaがあるかだけを見る",
-      "クラス名が同じなので全メソッド対応とみなす"
+      "Spark Connectはすべてのメソッドをpandasに委譲するため、pandasでサポートされているかだけを確認する。",
+      "対象リリースのAPIリファレンスを参照し、そのメソッドにSpark Connectのサポートが明示されているか確認する。",
+      "クライアントマシンにJavaがインストールされているかだけを確認する。",
+      "クラス名が同じなので、すべてのDataFrameメソッドがサポートされると仮定する。"
     ],
     "explanation": "対象リリースの個別メソッドに、Supports Spark Connectなどの対応表記があるか確認します。従来PySparkや同名クラスにあることだけでは、対応を保証できません。",
     "reasons": [
@@ -3997,12 +3997,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-CON-005": {
-    "stem": "既存のConnectクライアントを保ったままサーバーを更新し、アプリケーションの同時更新を減らしたいとします。互換性の確認は行います。この利点に必要な条件はどれですか。",
+    "stem": "プラットフォームチームはSpark Connectサーバーを更新したいと考えていますが、デプロイ済みの複数のアプリケーションでは既存のクライアントリリースを使い続けます。クライアントとサーバーの分離により、アプリケーションの同時更新を減らせると期待していますが、展開前に互換性を確認します。Spark Connectの構成が持つ互換性の利点を得るために不可欠な条件はどれですか？",
     "options": [
-      "gRPCなら将来のRPCも無条件に使える",
-      "既存クライアントが使うサーバーRPC定義の後方互換性が保たれる",
-      "すべてのアプリケーションをクライアントのPython内で実行する",
-      "全クライアントとサーバーが同じ仮想環境を共有する"
+      "gRPCがバージョンの制約をすべて取り除くため、クライアントはサーバーの対応を確認せず、将来のどんなRPCでも使用できる。",
+      "既存のクライアントが使用するサーバー側のRPC定義で、後方互換性が維持されている必要がある。",
+      "サーバーはすべてのアプリケーションをクライアントのPythonプロセス内で実行する必要がある。",
+      "すべてのクライアントとサーバーで、1つのPython仮想環境を共有する必要がある。"
     ],
     "explanation": "クライアントとサーバーを独立に更新しやすい設計でも、既存クライアントが使うRPCの後方互換性は必要です。gRPCだから全バージョンが無条件に互換となるわけではありません。",
     "reasons": [
@@ -4013,12 +4013,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-CON-006": {
-    "stem": "クライアントでremote('sc://localhost:15002')を設定しましたが、ポートに待受プロセスがなく接続拒否になります。接続先を指定すればサーバーも起動すると思っていました。まず必要な対応はどれですか。",
+    "stem": "開発者はSpark Connectのクライアントパッケージをインストールし、SparkSession.builder.remote(\"sc://localhost:15002\")を設定しました。ローカルネットワークは正常ですが、ポート15002で待ち受けるプロセスがないため、接続が拒否されます。開発者は、リモートアドレスを設定すればSpark Connectサーバーも起動すると考えていました。最初に何をすべきですか？",
     "options": [
-      "同じSPARK_REMOTEを設定すれば自動起動する",
-      "サーバーは停止したままhttps://へ変える",
-      "対応するSpark配布物とConnectパッケージでサーバーを起動し、その待受先へ接続する",
-      "remoteセッションを繰り返し作れば待受が始まる"
+      "SPARK_REMOTEに同じアドレスを設定する。この環境変数がサーバーを自動起動する。",
+      "すべてのサーバープロセスを停止したまま、sc://をhttps://に置き換える。",
+      "対応するSparkの配布物とConnectパッケージを使ってSpark Connectサーバープロセスを起動し、その待ち受けアドレスにクライアントを接続する。",
+      "どれかがポートで待ち受けるようになるまで、リモートのSparkSessionオブジェクトを追加作成する。"
     ],
     "explanation": "remoteやSPARK_REMOTEは接続先の指定で、サーバー起動ではありません。対応するSparkとConnectパッケージを使ってサーバーを起動し、待受先へ接続します。",
     "reasons": [
@@ -4029,12 +4029,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-CON-007": {
-    "stem": "Connectクライアントにはpricing_rulesがありますが、UDF内でimportするとリモートPythonワーカーでModuleNotFoundErrorになります。接続と組み込み処理は正常です。適切な対応はどれですか。",
+    "stem": "Spark Connectクライアントでは、pricing_rulesという独自のPythonパッケージをインポートできます。あるPython UDFは関数本体内でこのパッケージをインポートしますが、クエリを実行すると、リモートのPython WorkerでModuleNotFoundErrorが発生します。クライアントの接続には成功しており、組み込み操作だけなら動作します。この失敗に対処する方法はどれですか？",
     "options": [
-      "クライアントの仮想環境だけへ再インストールする",
-      "対応する依存関係の配布手段で、実行先のPythonワーカーでも使えるようにする",
-      "新しいサーバーを起動せず、接続先だけlocalhostへ変える",
-      "クライアントのdriver-memoryだけを増やす"
+      "クライアントの仮想環境だけに、パッケージを再インストールする。",
+      "サポートされている依存関係の配置方法を使い、UDFを実行するリモートのPython Workerでパッケージを利用可能にする。",
+      "別のサーバーを起動せず、Spark Connectサーバーのアドレスをlocalhostに置き換える。",
+      "クライアントのdriver-memory設定だけを増やす。WorkerでのPythonのインポートはそのメモリを使用するため。"
     ],
     "explanation": "クライアントでimportできても、UDFを動かすリモートPythonワーカーに同じパッケージがあるとは限りません。エラーが出た実行先で使えるよう、依存関係を配布します。",
     "reasons": [
@@ -4045,12 +4045,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-PAN-001": {
-    "stem": "スカラーpandas UDFで値を2倍にし、null行も含めて1入力に1出力を保ちます。掲載のs.dropna()*2は、[1.0,null,3.0]の入力で長さが変わります。依存ライブラリは正常です。正しい修正はどれですか。",
+    "stem": "スカラーPandas UDFで、測定値がNULLの行も含め、入力1行につき1つの結果を維持しながら、各測定値を2倍にする必要があります。開発者は次のコードを書きます。\n\n```python\n@F.pandas_udf(\"double\")\ndef twice(s: pd.Series) -> pd.Series:\n    return s.dropna() * 2\n```\n\n入力のArrowバッチには[1.0, NULL, 3.0]が含まれています。PandasとPyArrowは正しくインストールされています。必要な行数を維持し、スカラーUDFの仕様を満たす変更はどれですか？",
     "options": [
-      "戻り値型を省略して短いSeriesを許容させる",
-      "s*2を返し、元の長さと欠損位置を保つ",
-      "スカラーpandas UDFは任意行数を返せるので変更不要",
-      "合計の2倍だけを1要素Seriesで返し、Sparkに全行への配布を任せる"
+      "Sparkが短い出力Seriesを受け入れるよう、戻り値の型を削除する。",
+      "s * 2を返し、入力Seriesの長さと欠損値の位置を維持する。",
+      "スカラーPandas UDFは任意の行数を返せるため、dropna()を残す。",
+      "pd.Series([s.sum() * 2])を返す。Sparkが1つのスカラー結果をすべての入力行に自動的に配る。"
     ],
     "explanation": "スカラーのSeries→Series UDFは、入力と同じ長さのSeriesを返す必要があります。dropnaは行数を減らすため不適切です。s*2なら欠損位置も長さも保てます。",
     "reasons": [
@@ -4061,12 +4061,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-PAN-002": {
-    "stem": "customer_idでapplyInPandasする処理で、1顧客だけ数百万行あり、そのグループでPythonワーカーがメモリ不足です。arrow.maxRecordsPerBatchを下げても解消しません。Spark 3.5.6での正しい説明はどれですか。",
+    "stem": "ジョブは、顧客ごとの独自計算のためにdf.groupBy(\"customer_id\").applyInPandas(...)を使用しています。大半の顧客は数行ですが、ある1人の顧客には数百万行あります。その顧客のグループを処理する際、Python Workerでジョブが失敗します。spark.sql.execution.arrow.maxRecordsPerBatchを小さくしても解決しません。Spark 3.5.6で、関係するメモリ上の処理単位を最もよく説明しているのはどれですか？",
     "options": [
-      "applyInPandasは常に入力全体をドライバーへ集める",
-      "グループ全体が関数用にメモリへ入り、maxRecordsPerBatchはそのグループの行数を制限しない",
-      "設定により各グループが必ず独立した小さい呼び出しへ分割される",
-      "1行ずつ処理するので、影響するのは1行の大きさだけ"
+      "applyInPandasは、常に入力DataFrame全体をDriverに集める。",
+      "関数のためにグループ全体がメモリに読み込まれ、maxRecordsPerBatchはそのグループ内の行数を制限しない。",
+      "この設定により、各グループは必ず小さな独立した関数呼び出しに分割されるので、失敗はグループサイズと無関係である。",
+      "各グループは1行ずつ処理されるため、Workerのメモリに影響するのは1行のサイズだけである。"
     ],
     "explanation": "applyInPandasはグループ全体を1つのpandas DataFrameとして関数へ渡します。maxRecordsPerBatchではその巨大グループを分割できないため、偏りとグループ単位のメモリ量を見直します。",
     "reasons": [
@@ -4077,12 +4077,12 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-PAN-003": {
-    "stem": "arrow.pyspark.enabledを無効にしました。必要なpandasとPyArrowは導入済みで、有効なスカラーpandas UDFも定義しています。この設定で通常の行単位Python UDFに変わる、という理解は正しいですか。",
+    "stem": "開発者は、Spark DataFrameからローカルのpandas DataFrameへの変換を調べるため、spark.sql.execution.arrow.pyspark.enabledを無効にしました。同じアプリケーションには有効なスカラーPandas UDFが定義されており、必要なノードには互換性のあるpandasとPyArrowがインストールされています。開発者は、この設定によってPandas UDFも、1行ずつ処理する標準のPython UDFに変わると結論付けました。正しい説明はどれですか？",
     "options": [
-      "設定はtoPandas/createDataFrameの変換最適化に関するもので、明示したpandas UDFを通常UDFへ変えない",
-      "すべてのpandas UDFから宣言した戻り値型が消える",
-      "依存関係が正常でもすべてのpandas UDFが必ず失敗する",
-      "falseなら全pandas UDFが自動で通常Python UDFになる"
+      "この設定はtoPandas/createDataFrameの変換でのArrow最適化を制御するものであり、明示的に定義したPandas UDFを通常のPython UDFに変えるものではない。",
+      "この設定は、すべてのPandas UDFから宣言済みのSparkの戻り値の型を削除する。",
+      "依存関係が正しくインストールされていても、この変換の最適化を無効にすると、すべてのPandas UDF呼び出しが必ず失敗する。",
+      "この設定がfalseになるたびに、すべてのPandas UDFは自動的に標準のPython UDFになる。"
     ],
     "explanation": "arrow.pyspark.enabledは主にtoPandasやcreateDataFrameの変換最適化の設定です。明示したpandas UDFの種類を、通常の行単位UDFへ変えるスイッチではありません。",
     "reasons": [
@@ -4093,11 +4093,11 @@ const SPARK_FEEDBACK_JA = {
     ]
   },
   "AUTHORED-SPARK-20261025-PAN-004": {
-    "stem": "pandas API on Sparkのpsdfに変換が積み重なり、論理計画が巨大化して計画作成が遅くなりました。永続的なチェックポイント先は設定済みで、中間結果の実体化も可能です。全データをローカルpandasへ集めず、過去の計画を切る操作はどれですか。",
+    "stem": "pandas API on SparkのDataFrame psdfでは、多数の変換によって論理計画が非常に大きくなり、計画の作成に時間がかかるようになっています。永続的なSparkチェックポイントのディレクトリはすでに設定されており、中間結果を実体化する余裕があります。データセット全体をローカルのpandasメモリに集めず、以前の計画を切り詰めたpandas-on-Spark DataFrameを返す操作はどれですか？",
     "options": [
       "psdf.to_pandas()",
       "psdf.head(5)",
-      "psdf=psdf.spark.checkpoint()",
+      "psdf = psdf.spark.checkpoint()",
       "psdf.spark.explain()"
     ],
     "explanation": "psdf.spark.checkpoint()は中間結果を保存し、それ以前の複雑な計画を切り離します。戻り値を後続処理に使えばよく、全データをローカルpandasへ集める必要はありません。",
