@@ -57,6 +57,36 @@ function scrollToFeedback(s,q){
   panel.scrollIntoView({block:'start',behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});
  }));
 }
+function questionNavState(s,id){
+ if(!own(s.answers,id))return {className:'',label:'未回答'};
+ if(!s.immediateFeedback)return {className:'done',label:'回答済み'};
+ if(Q[id].grading_hold)return {className:'done',label:'採点保留'};
+ return E.isCorrect(s.answers[id],Q[id])?{className:'done nav-correct',label:'正解'}:{className:'done nav-wrong',label:'不正解'};
+}
+function sessionAccuracy(s){
+ const answers=s.review?s.review.events.reduce((out,event)=>{if(!own(out,event.questionId))out[event.questionId]=event.answer;return out;},{}):s.answers;
+ const ids=s.ids.filter(id=>own(answers,id)&&Q[id]&&!Q[id].grading_hold);
+ return {correct:ids.filter(id=>E.isCorrect(answers[id],Q[id])).length,answered:ids.length};
+}
+function sessionAccuracyContent(s){
+ const label=s.review?'初回正答率':'正答率';
+ if(!s.immediateFeedback)return '<b>'+label+'</b><span class="small muted">提出後に表示</span>';
+ const result=sessionAccuracy(s);
+ return '<b>'+label+' '+pct(result.correct,result.answered)+'</b><span class="small muted">正解 '+result.correct+' / 回答 '+result.answered+'問</span>';
+}
+function questionGrid(s){
+ return s.ids.map((id,i)=>{const status=questionNavState(s,id);return '<button data-pos="'+i+'" class="'+(i===s.pos?'active ':'')+status.className+'" aria-label="'+(i+1)+'問目 '+status.label+'" title="'+status.label+'">'+(i+1)+'</button>';}).join('');
+}
+function syncQuestionProgress(s){
+ $('#answeredCount').textContent='回答済み '+Object.keys(s.answers).length+'/'+s.ids.length+'問';
+ $('#sessionAccuracy').innerHTML=sessionAccuracyContent(s);
+ app.querySelectorAll('[data-pos]').forEach(b=>{
+  const pos=Number(b.dataset.pos),status=questionNavState(s,s.ids[pos]);
+  for(const name of ['done','nav-correct','nav-wrong'])b.classList.toggle(name,status.className.split(' ').includes(name));
+  b.setAttribute('aria-label',(pos+1)+'問目 '+status.label);b.setAttribute('title',status.label);
+ });
+}
+
 function bindAnswerSelection(s,q){
  const field=$('#answers'),multi=E.correctIndexes(q).length>1;
  const updateLimit=()=>{const selected=[...field.querySelectorAll('input:checked')];if(multi&&!field.disabled)field.querySelectorAll('input').forEach(input=>input.disabled=!input.checked&&selected.length>=E.correctIndexes(q).length);};
@@ -68,7 +98,7 @@ function bindAnswerSelection(s,q){
   if(complete){renderQuestion();if(s.immediateFeedback)scrollToFeedback(s,q);return;}
   field.querySelectorAll('.option').forEach(label=>label.classList.toggle('chosen',label.querySelector('input').checked));
   updateLimit();$('#selectionState').textContent=selectionMessage(q,selected,false,s.immediateFeedback);$('#selectionState').hidden=!multi;
-  if(!s.review){$('#answeredCount').textContent='回答済み '+Object.keys(s.answers).length+'/'+s.ids.length+'問';app.querySelectorAll('[data-pos]').forEach(b=>{const pos=Number(b.dataset.pos),done=own(s.answers,s.ids[pos]);b.classList.toggle('done',done);b.setAttribute('aria-label',(pos+1)+'問目'+(done?' 回答済み':''));});}
+  if(!s.review)syncQuestionProgress(s);
  };
 }
 function originalIds(){return PLAN.retained_question_ids||PLAN.source_question_ids||E.allQuestions.filter(q=>q.number).map(q=>q.id);}
@@ -105,7 +135,7 @@ function renderQuestion(){
  const answered=own(s.answers,q.id),locked=answered&&s.immediateFeedback;
  const value=own(s.draftAnswers,q.id)?s.draftAnswers[q.id]:s.answers[q.id];
  const selected=Array.isArray(value)?value:value===undefined?[]:[value],multi=E.correctIndexes(q).length>1,order=orderedOptions(q,s.optionOrders?.[q.id]);
- app.innerHTML=`<div class="main"><section class="card question-card"><div class="eyebrow">${esc(s.title)} · ${s.pos+1}/${s.ids.length} · ${esc(questionLabel(q))}</div><div class="question-meta"><span class="badge">${multi?'複数選択 · '+E.correctIndexes(q).length+'つ選択':'単一選択'}</span><span class="small muted">${esc(q.domain)} · ${esc(q.id)}</span></div><p class="small muted">${esc(PLAN.assumptions)}</p><div class="question source-markdown" lang="en">${md(q.stem,q)}</div><fieldset id="answers" ${locked?'disabled':''}><legend class="sr-only">解答の選択</legend>${order.map((i,position)=>`<label class="option ${selected.includes(i)?'chosen':''}"><input type="${multi?'checkbox':'radio'}" name="answer" value="${i}" ${selected.includes(i)?'checked':''}><span lang="en">${optionContent(q,i,position)}</span></label>`).join('')}</fieldset><p id="selectionState" class="small muted" role="status" ${answered||!multi?'hidden':''}>${selectionMessage(q,selected,answered,s.immediateFeedback)}</p>${locked?feedback(q,s.answers[q.id],order,true):''}<div class="nav question-actions">${button('前へ','id="prev" '+(s.pos===0?'disabled':''))}${button(s.pos===s.ids.length-1?'提出して結果を見る':'次へ','id="next"',true)}</div></section><aside class="card"><b id="clock">${s.deadline?'':'時間制限なし'}</b><p id="answeredCount">回答済み ${Object.keys(s.answers).length}/${s.ids.length}問</p><div class="qgrid">${s.ids.map((id,i)=>`<button data-pos="${i}" class="${i===s.pos?'active ':''}${own(s.answers,id)?'done':''}" aria-label="${i+1}問目${own(s.answers,id)?' 回答済み':''}">${i+1}</button>`).join('')}</div><div class="toolbar">${button('提出して採点','id="submit"',true)}${button('中断してホームへ','id="pauseSession"')}</div><p class="small muted">複数選択は指定数を選ぶと自動保存し、完全一致で正解です。途中の選択も保存します。${s.immediateFeedback?'採点後は回答を変更できません。':'選び直すときは、先に選択を外してください。指定数に足りない回答は未解答として提出します。'}</p></aside></div>`;
+ app.innerHTML=`<div class="main"><section class="card question-card"><div class="eyebrow">${esc(s.title)} · ${s.pos+1}/${s.ids.length} · ${esc(questionLabel(q))}</div><div class="question-meta"><span class="badge">${multi?'複数選択 · '+E.correctIndexes(q).length+'つ選択':'単一選択'}</span><span class="small muted">${esc(q.domain)} · ${esc(q.id)}</span></div><p class="small muted">${esc(PLAN.assumptions)}</p><div class="question source-markdown" lang="en">${md(q.stem,q)}</div><fieldset id="answers" ${locked?'disabled':''}><legend class="sr-only">解答の選択</legend>${order.map((i,position)=>`<label class="option ${selected.includes(i)?'chosen':''}"><input type="${multi?'checkbox':'radio'}" name="answer" value="${i}" ${selected.includes(i)?'checked':''}><span lang="en">${optionContent(q,i,position)}</span></label>`).join('')}</fieldset><p id="selectionState" class="small muted" role="status" ${answered||!multi?'hidden':''}>${selectionMessage(q,selected,answered,s.immediateFeedback)}</p>${locked?feedback(q,s.answers[q.id],order,true):''}<div class="nav question-actions">${button('前へ','id="prev" '+(s.pos===0?'disabled':''))}${button(s.pos===s.ids.length-1?'提出して結果を見る':'次へ','id="next"',true)}</div></section><aside class="card"><b id="clock">${s.deadline?'':'時間制限なし'}</b><p id="answeredCount">回答済み ${Object.keys(s.answers).length}/${s.ids.length}問</p><div id="sessionAccuracy" class="session-accuracy">${sessionAccuracyContent(s)}</div><div class="qgrid">${questionGrid(s)}</div><div class="toolbar">${button('提出して採点','id="submit"',true)}${button('中断してホームへ','id="pauseSession"')}</div><p class="small muted">複数選択は指定数を選ぶと自動保存し、完全一致で正解です。途中の選択も保存します。${s.immediateFeedback?'採点後は回答を変更できません。':'選び直すときは、先に選択を外してください。指定数に足りない回答は未解答として提出します。'}</p></aside></div>`;
  bindAnswerSelection(s,q);
  $('#prev').onclick=()=>move(-1);$('#next').onclick=()=>s.pos===s.ids.length-1?submit(false):move(1);
  $('#submit').onclick=()=>submit(false);$('#pauseSession').onclick=()=>navigate('home');
@@ -118,7 +148,7 @@ function renderReviewQuestion(s){
  if(!r.pending&&own(s.draftAnswers,q.id)){const draft=s.draftAnswers[q.id];recordSelection(s,q,Array.isArray(draft)?draft:[draft]);}
  const answered=r.pending,value=answered?s.answers[q.id]:s.draftAnswers[q.id],selected=Array.isArray(value)?value:value===undefined?[]:[value];
  const multi=E.correctIndexes(q).length>1,completed=s.ids.length-r.queue.length,tries=r.events.filter(e=>e.questionId===q.id).length+(answered?0:1),order=orderedOptions(q,s.optionOrders?.[q.id]);
- app.innerHTML=`<div class="main"><section class="card question-card"><div class="eyebrow">${esc(s.title)} · ${esc(questionLabel(q))} · ${tries}回目</div><div class="question-meta"><span class="badge">${multi?'複数選択 · '+E.correctIndexes(q).length+'つ選択':'単一選択'}</span><span class="small muted">${esc(q.domain)} · ${esc(q.id)}</span></div><p class="small muted">${esc(PLAN.assumptions)}</p><div class="question source-markdown" lang="en">${md(q.stem,q)}</div><fieldset id="answers" ${answered?'disabled':''}><legend class="sr-only">解答の選択</legend>${order.map((i,position)=>`<label class="option ${selected.includes(i)?'chosen':''}"><input type="${multi?'checkbox':'radio'}" name="answer" value="${i}" ${selected.includes(i)?'checked':''}><span lang="en">${optionContent(q,i,position)}</span></label>`).join('')}</fieldset><p id="selectionState" class="small muted" role="status" ${answered||!multi?'hidden':''}>${selectionMessage(q,selected,answered,s.immediateFeedback)}</p>${answered&&s.immediateFeedback?feedback(q,s.answers[q.id],order,true):''}<div class="nav question-actions">${button('中断してホームへ','id="pauseSession"')}${button(r.queue.length?'次の復習へ':'完了して結果を見る','id="reviewNext" '+(!answered?'disabled':''),true)}</div></section><aside class="card"><b>復習待ち ${r.queue.length}問</b><p>今回の完了 ${completed}/${s.ids.length}問<br>回答 ${r.events.length}回</p><p id="clock">時間制限なし</p><p class="small muted">間違えた問題は最後に戻ります。選択すると回答を保存し、次へ進めます。中断すると、復習待ち・選択途中・回答の経過を保存します。</p><details><summary>復習待ちの問題</summary><p>${r.queue.map(id=>esc(questionLabel(Q[id]))).join(' → ')||'すべて完了しました。'}</p></details></aside></div>`;
+ app.innerHTML=`<div class="main"><section class="card question-card"><div class="eyebrow">${esc(s.title)} · ${esc(questionLabel(q))} · ${tries}回目</div><div class="question-meta"><span class="badge">${multi?'複数選択 · '+E.correctIndexes(q).length+'つ選択':'単一選択'}</span><span class="small muted">${esc(q.domain)} · ${esc(q.id)}</span></div><p class="small muted">${esc(PLAN.assumptions)}</p><div class="question source-markdown" lang="en">${md(q.stem,q)}</div><fieldset id="answers" ${answered?'disabled':''}><legend class="sr-only">解答の選択</legend>${order.map((i,position)=>`<label class="option ${selected.includes(i)?'chosen':''}"><input type="${multi?'checkbox':'radio'}" name="answer" value="${i}" ${selected.includes(i)?'checked':''}><span lang="en">${optionContent(q,i,position)}</span></label>`).join('')}</fieldset><p id="selectionState" class="small muted" role="status" ${answered||!multi?'hidden':''}>${selectionMessage(q,selected,answered,s.immediateFeedback)}</p>${answered&&s.immediateFeedback?feedback(q,s.answers[q.id],order,true):''}<div class="nav question-actions">${button('中断してホームへ','id="pauseSession"')}${button(r.queue.length?'次の復習へ':'完了して結果を見る','id="reviewNext" '+(!answered?'disabled':''),true)}</div></section><aside class="card"><b>復習待ち ${r.queue.length}問</b><p>今回の完了 ${completed}/${s.ids.length}問<br>回答 ${r.events.length}回</p><div id="sessionAccuracy" class="session-accuracy">${sessionAccuracyContent(s)}</div><p id="clock">時間制限なし</p><p class="small muted">間違えた問題は最後に戻ります。選択すると回答を保存し、次へ進めます。中断すると、復習待ち・選択途中・回答の経過を保存します。</p><details><summary>復習待ちの問題</summary><p>${r.queue.map(id=>esc(questionLabel(Q[id]))).join(' → ')||'すべて完了しました。'}</p></details></aside></div>`;
  bindAnswerSelection(s,q);
  $('#pauseSession').onclick=()=>navigate('home');
  $('#reviewNext').onclick=()=>{tickTime();if(E.advanceReview(state,activeKey)){save();renderQuestion();document.querySelector('.question-card')?.scrollIntoView({block:'start'});}else submit(false,true);};
