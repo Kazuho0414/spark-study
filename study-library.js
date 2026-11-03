@@ -1,6 +1,7 @@
 /* Portable, versioned question libraries and loss-preserving three-way synchronization. */
 (function(root){
 'use strict';
+const storage=root.StudyStorage||root.localStorage;
 const KEY='study-library-v1', clone=x=>JSON.parse(JSON.stringify(x)), equal=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
 const plain=x=>x&&typeof x==='object'&&!Array.isArray(x);
 const safe=x=>typeof x==='string'&&/^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,79}$/.test(x)&&!['constructor','prototype','__proto__'].includes(x);
@@ -35,22 +36,23 @@ const builtin={...root.SPARK_QUESTION_BANK,exams:[...root.SPARK_QUESTION_BANK.ex
 const bundled=packaged.filter(b=>b.id!==LEGACY_M5);
 function needsMigration(raw){return !!(mock5&&raw?.schema==='study-library-v1'&&raw.banks?.[LEGACY_M5]);}
 function backupBeforeMigration(raw,source){
- if(needsMigration(raw)&&!localStorage.getItem(MIGRATION_BACKUP+source))localStorage.setItem(MIGRATION_BACKUP+source,JSON.stringify(raw));
+ if(needsMigration(raw)&&!storage.getItem(MIGRATION_BACKUP+source))storage.setItem(MIGRATION_BACKUP+source,JSON.stringify(raw));
  const previous=raw?.banks?.[root.EXAM4_BANK.id];
  const key='study-147-before-20261025:'+source;
- if(previous&&(previous.data?.edition||0)<(root.EXAM4_BANK.edition||0)&&!localStorage.getItem(key)){
-  try{localStorage.setItem(key,JSON.stringify(raw));}
+ if(previous&&(previous.data?.edition||0)<(root.EXAM4_BANK.edition||0)&&!storage.getItem(key)){
+  try{storage.setItem(key,JSON.stringify(raw));}
   catch{
    // Keep every state field; bundled question bodies already remain in the published edition.
    const compact={...raw,banks:Object.fromEntries(Object.entries(raw.banks).map(([id,b])=>[id,{...b,data:id==='spark'||id===root.EXAM4_BANK.id?undefined:b.data}])),backup_note:'Bundled question bodies omitted to fit storage; every saved state field is retained.'};
-   try{localStorage.setItem(key,JSON.stringify(compact));}catch{/* The original saved library remains untouched; backup space must not hide its history. */}
+   try{storage.setItem(key,JSON.stringify(compact));}catch{/* The original saved library remains untouched; backup space must not hide its history. */}
   }
  }
 }
-function migrationBackups(){const out={};for(const source of ['local','cloud','import']){const value=localStorage.getItem(MIGRATION_BACKUP+source);if(value)out[source]=JSON.parse(value);}return out;}
+function migrationBackups(){const out={};for(const source of ['local','cloud','import']){const value=storage.getItem(MIGRATION_BACKUP+source);if(value)out[source]=JSON.parse(value);}return out;}
 function data(id,entry){
  if(id==='spark')return builtin;
  const current=packaged.find(bank=>bank.id===id);
+ if(!entry.data&&current)return current;
  // The published edition extends stable IDs; normalizing old local/cloud copies must load it.
  const raw=id===root.EXAM4_BANK.id&&current&&(current.edition||0)>=(entry.data?.edition||0)?current:entry.data;
  return validateBank(raw);
@@ -76,13 +78,24 @@ function normalize(raw){
  }
  return out;
 }
-let library,error='';
-try{const old=localStorage.getItem(KEY),raw=JSON.parse(old||localStorage.getItem('spark-study-v2')||localStorage.getItem('spark-study-v1')||JSON.stringify(LearningEngine.makeEngine(builtin).emptyState()));backupBeforeMigration(raw,'local');library=normalize(raw);}catch(e){error=e.message;library=normalize(LearningEngine.makeEngine(builtin).emptyState());}
-let active=localStorage.getItem('study-active-bank')||'spark';
+let library,error='',saveError='';
+try{const old=storage.getItem(KEY),raw=JSON.parse(old||storage.getItem('spark-study-v2')||storage.getItem('spark-study-v1')||JSON.stringify(LearningEngine.makeEngine(builtin).emptyState()));backupBeforeMigration(raw,'local');library=normalize(raw);}catch(e){error=e.message;library=normalize(LearningEngine.makeEngine(builtin).emptyState());}
+let active=storage.getItem('study-active-bank')||'spark';
 const newDefault=root.EXAM4_BANK.id;
-if(!localStorage.getItem('study-exam4-default-20261025')){try{const original=localStorage.getItem(KEY)||localStorage.getItem('spark-study-v2')||localStorage.getItem('spark-study-v1');if(original&&!localStorage.getItem('study-exam4-before-20261025'))localStorage.setItem('study-exam4-before-20261025',original);localStorage.setItem('study-active-bank',newDefault);localStorage.setItem('study-exam4-default-20261025','1');active=newDefault;}catch(e){error='移行前バックアップを保存できません: '+e.message;}}
+if(!storage.getItem('study-exam4-default-20261025')){try{const original=storage.getItem(KEY)||storage.getItem('spark-study-v2')||storage.getItem('spark-study-v1');if(original&&!storage.getItem('study-exam4-before-20261025'))storage.setItem('study-exam4-before-20261025',original);storage.setItem('study-active-bank',newDefault);storage.setItem('study-exam4-default-20261025','1');active=newDefault;}catch(e){error='移行前バックアップを保存できません: '+e.message;}}
 if(active==='spark')active=newDefault;if(active===LEGACY_M5&&mock5)active='spark';if(!library.banks[active])active='spark';
-function persist(next){if(error)throw Error('元の保存記録を保護しています：'+error);const normalized=normalize(next);localStorage.setItem(KEY,JSON.stringify(normalized));library=normalized;}
+function storageSnapshot(value){
+ return {...value,banks:Object.fromEntries(Object.entries(value.banks).map(([id,entry])=>{
+  const current=packaged.find(bank=>bank.id===id);
+  return [id,{...entry,data:id==='spark'||(current&&equal(current,entry.data))?null:entry.data}];
+ }))};
+}
+function persist(next){
+ if(error)throw Error('元の保存記録を保護しています：'+error);
+ const normalized=normalize(next);library=normalized;
+ try{storage.setItem(KEY,JSON.stringify(storageSnapshot(normalized)));saveError='';}
+ catch(e){saveError=e.message;throw e;}
+}
 // Merge values changed on only one device. Concurrent edits prefer this device;
 // both complete inputs are retained in the synchronization backup when conflicts occur.
 function mergeValue(base,local,remote,conflicts){
@@ -136,13 +149,13 @@ function merge(base,local,remote){
  }
  return {value:normalize(out),conflicts:conflicts.count};
 }
-root.StudyLibrary={KEY,LEGACY_M5,get error(){return error;},validateBank,normalize,merge,equal,needsMigration,backupBeforeMigration,migrationBackups,
+root.StudyLibrary={KEY,LEGACY_M5,get error(){return error;},get saveError(){return saveError;},validateBank,normalize,merge,equal,needsMigration,backupBeforeMigration,migrationBackups,
  get active(){return active;},get current(){return data(active,library.banks[active]);},get state(){return clone(library.banks[active].state);},
  snapshot:()=>clone(library),list:()=>Object.entries(library.banks).map(([id,e])=>({id,title:data(id,e).title})),
- capture(s){const normalized=LearningEngine.makeEngine(data(active,library.banks[active])).normalizeState(s);if(equal(normalized,library.banks[active].state))return false;const next=clone(library);next.banks[active].state=normalized;persist(next);return true;},
+ capture(s){const normalized=LearningEngine.makeEngine(data(active,library.banks[active])).normalizeState(s);if(equal(normalized,library.banks[active].state)&&!saveError)return false;const next=clone(library);next.banks[active].state=normalized;persist(next);return true;},
  accept(next){persist(next);},
- recover(){localStorage.setItem('study-recovery-'+Date.now(),localStorage.getItem(KEY)||localStorage.getItem('spark-study-v2')||localStorage.getItem('spark-study-v1')||'{}');error='';persist(library);},
- select(id){if(id===LEGACY_M5&&mock5)id='spark';if(!library.banks[id])throw Error('問題集がありません');localStorage.setItem('study-active-bank',id);active=id;},
+ recover(){storage.setItem('study-recovery-'+Date.now(),storage.getItem(KEY)||storage.getItem('spark-study-v2')||storage.getItem('spark-study-v1')||'{}');error='';persist(library);},
+ select(id){if(id===LEGACY_M5&&mock5)id='spark';if(!library.banks[id])throw Error('問題集がありません');storage.setItem('study-active-bank',id);active=id;},
  add(raw){const bank=validateBank(raw);if(bank.id===LEGACY_M5&&mock5)throw Error('模試5はSpark合格演習室の模試1〜5に収録済みです。');if(library.banks[bank.id])throw Error('同じ問題集IDが存在します。既存問題集と別のIDにしてください');const next=clone(library);next.banks[bank.id]={data:bank,state:LearningEngine.makeEngine(bank).emptyState()};persist(next);return bank.id;}
 };
 })(globalThis);
