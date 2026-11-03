@@ -31,7 +31,7 @@ function compactExisting(){
  for(const key of keys){try{
   const raw=backend.getItem(key);if(raw===null||raw.startsWith('{"schema":"'+FORMAT+'"'))continue;
   const packed=encode(decode(raw));
-  if(packed.length<raw.length){backend.setItem(key,packed);result.compacted++;result.charactersSaved+=raw.length-packed.length;}
+  if(packed.length<raw.length&&backend.getItem(key)===raw){backend.setItem(key,packed);result.compacted++;result.charactersSaved+=raw.length-packed.length;}
  }catch(e){result.failed.push({key,message:e.message});}}
  return result;
 }
