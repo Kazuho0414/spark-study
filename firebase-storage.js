@@ -32,12 +32,13 @@
     return {
       async login(){const provider=new authLib.GoogleAuthProvider();provider.setCustomParameters({prompt:'select_account'});await authLib.signInWithPopup(auth,provider);await check();},
       logout:()=>authLib.signOut(auth),
-      async read(){
+      async read(knownRevision){
         const r=await refs();
         return dbLib.runTransaction(db,async tx=>{
           const meta=await tx.get(r.meta);if(!meta.exists())return {revision:0,text:null};
           const m=meta.data();
           if(m.schema!==1||!Number.isSafeInteger(m.count)||m.count<1||m.count>100)throw Error('クラウドの保存形式を確認してください。');
+          if(m.revision===knownRevision)return {revision:m.revision,text:null,unchanged:true};
           const chunks=await Promise.all(Array.from({length:m.count},(_,i)=>tx.get(r.chunk(i))));
           if(chunks.some(x=>!x.exists()||x.data().revision!==m.revision||typeof x.data().text!=='string'))throw Error('クラウド記録が不完全です。');
           if((await check()).uid!==r.uid)throw Error('ログイン状態が変わりました。');

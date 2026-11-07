@@ -76,7 +76,7 @@ html:has(body.study-display-session){scroll-padding-bottom:calc(92px + env(safe-
 <script src="learning-engine.js?v=20261025-r3"></script>
 <script src="lz-string.min.js?v=20261103-storage-quota-r1"></script>
 <script src="study-storage.js?v=20261103-storage-quota-r1"></script>
-<script src="study-library.js?v=20261103-storage-quota-r1"></script>
+<script src="study-library.js?v=20261108-sync-r1"></script>
 <script src="study-planner.js?v=20261025-due-wrong-r1"></script>
 <script src="feedback-ja.js?v=20261026-faithful-ja-q138-r1"></script>
 <script src="app.js?v=20261103-storage-quota-r1"></script>
@@ -176,14 +176,14 @@ html:has(body.study-display-session){scroll-padding-bottom:calc(92px + env(safe-
   apply();
 })();
 </script>
-<script src="firebase-config.js"></script><script src="firebase-storage.js"></script><script>/* Automatic library synchronization. Local records remain usable offline. */
+<script src="firebase-config.js"></script><script src="firebase-storage.js?v=20261108-sync-r1"></script><script>/* Automatic library synchronization. Local records remain usable offline. */
 (function(){
 'use strict';
 const config=globalThis.SPARK_FIREBASE_CONFIG,configured=!!((config?.ownerEmail||config?.ownerEmailSha256)&&['apiKey','authDomain','projectId','appId'].every(k=>config.firebase?.[k]));
-let issue='',lastSyncAt=null;
+let issue='',lastSyncAt=null,cloudRevision=null,retryAfter=0,failureCount=0;
 let adapter,user,busy=false,epoch=0,timer,base=null,message='端末に自動保存中。ログインすると問題集と履歴を自動同期します。',connecting;
 const panel=document.createElement('details');panel.id='cloudPanel';panel.className='card';
-panel.innerHTML='<summary id="cloudSummary">ログイン・自動保存</summary><p id="cloudStatus" role="status" aria-live="polite"></p><p id="cloudLastSync" class="small muted"></p><div class="toolbar"><button id="cloudLogin">Googleでログイン</button><button id="cloudSave">今すぐ同期</button><button id="cloudLoad">クラウドから同期</button><button id="cloudLogout">ログアウト</button><button id="cloudBackup">同期前のバックアップを保存</button></div><p class="small muted">ログイン時・回答後・画面に戻った時に自動同期します。通信できない間は端末に保存し、再接続時に再試行します。通常はバックグラウンドで保存します。端末を替える前に確かめたい場合は「今すぐ同期」を押してください。同じ演習を複数端末で同時に進めた場合は別の途中セッションとして保持します。</p>';
+panel.innerHTML='<summary id="cloudSummary">ログイン・自動保存</summary><p id="cloudStatus" role="status" aria-live="polite"></p><p id="cloudLastSync" class="small muted"></p><div class="toolbar"><button id="cloudLogin">Googleでログイン</button><button id="cloudSave">今すぐ同期</button><button id="cloudLoad">クラウドから同期</button><button id="cloudLogout">ログアウト</button><button id="cloudBackup">同期前のバックアップを保存</button></div><p class="small muted">ログイン時・回答後・画面に戻った時に自動同期します。通信できない間は端末に保存し、再接続時に再試行します。通常はバックグラウンドで保存します。利用上限エラー時は自動再試行を30分控えます。端末を替える前に確かめたい場合は「今すぐ同期」を押してください。同じ演習を複数端末で同時に進めた場合は別の途中セッションとして保持します。</p>';
 document.querySelector('#app').before(panel);
 const find=id=>panel.querySelector('#'+id);
 function setText(id,value){const node=find(id);if(node.textContent!==value)node.textContent=value;}
@@ -196,7 +196,7 @@ function render(){
  for(const id of ['cloudSave','cloudLoad','cloudLogout'])find(id).disabled=busy||!user;
 }
 function baseKey(){return 'study-cloud-base:'+config.firebase.projectId+':'+user.uid;}
-function schedule(delay=2500){if(!user||timer)return;message='未同期の変更があります。自動同期を待っています。';render();timer=setTimeout(()=>{timer=null;sync();},delay);}
+function schedule(delay=15000){if(!user||timer||Date.now()<retryAfter)return;message='未同期の変更があります。自動同期を待っています。';render();timer=setTimeout(()=>{timer=null;sync();},delay);}
 function applySnapshot(next){
  const incoming=next.banks[StudyLibrary.active]?.state;if(!incoming)throw Error('使用中の問題集が見つかりません');
  StudyLibrary.accept(next);refreshBankList();
@@ -208,38 +208,40 @@ function applySnapshot(next){
  if(activeKey){if(!state.sessions[activeKey]){activeKey=null;timing=null;view='home';home();}else if(!document.activeElement?.matches('textarea,input[type=text]'))renderQuestion();}
  else if(!document.activeElement?.matches('textarea,input[type=text]'))({home,study,analytics,history,drills,records}[view]||home)();
 }
-async function sync(){
- clearTimeout(timer);timer=null;if(!adapter||!user||busy)return;
+async function sync(manual=false){
+ clearTimeout(timer);timer=null;if(!adapter||!user||busy||(!manual&&Date.now()<retryAfter))return;
  if(storageBlocked||StudyLibrary.error){issue='端末の保存エラーを先に解消してください。';render();return;}
  busy=true;render();const token=epoch;
  try{
   tickTime();StudyLibrary.capture(state);
   for(let retry=0;retry<3;retry++){
-   const remote=await adapter.read();if(token!==epoch)throw Error('ログイン状態が変わりました');
-   const local=StudyLibrary.snapshot(),remoteRaw=remote.text?JSON.parse(remote.text):null,remoteValue=remoteRaw?StudyLibrary.normalize(remoteRaw):local;
+   const remote=await adapter.read(base?cloudRevision:null);if(token!==epoch)throw Error('ログイン状態が変わりました');
+   const local=StudyLibrary.snapshot(),remoteRaw=remote.unchanged?base:(remote.text?JSON.parse(remote.text):null),remoteValue=remoteRaw?StudyLibrary.normalize(remoteRaw):local;
    if(remoteRaw)StudyLibrary.backupBeforeMigration(remoteRaw,'cloud');
-   const result=remote.text?StudyLibrary.merge(base,local,remoteValue):{value:local,conflicts:0};
+   const result=remoteRaw?StudyLibrary.merge(base,local,remoteValue):{value:local,conflicts:0};
    // Keep both sides before applying a merge. Never put backups in the public repository.
    if(!StudyLibrary.equal(local,result.value)||result.conflicts)StudyStorage.setItem('study-sync-backup',JSON.stringify({local,remote:remoteValue,at:new Date().toISOString()}));
-   try{if(!remote.text||!StudyLibrary.equal(result.value,remoteRaw))await adapter.write(JSON.stringify(result.value),remote.revision);}
+   let savedRevision=remote.revision;
+   const payload=StudyLibrary.cloudSnapshot(result.value);
+   try{if(!remoteRaw||!StudyLibrary.equal(payload,StudyLibrary.cloudSnapshot(remoteRaw)))savedRevision=await adapter.write(JSON.stringify(payload),remote.revision);}
    catch(e){if(e.code==='study/conflict'&&retry<2)continue;throw e;}
    if(token!==epoch)throw Error('ログイン状態が変わりました');
    // Changes made while the network request was running must not be overwritten.
    StudyLibrary.capture(state);const latest=StudyLibrary.snapshot();
    const final=StudyLibrary.equal(local,latest)?result.value:StudyLibrary.merge(local,latest,result.value).value;
-   applySnapshot(final);base=result.value;StudyStorage.setItem(baseKey(),JSON.stringify(base));
+   applySnapshot(final);base=result.value;cloudRevision=savedRevision;retryAfter=0;failureCount=0;StudyStorage.setItem(baseKey(),JSON.stringify(base));
    const pending=!StudyLibrary.equal(final,result.value);
    lastSyncAt=new Date();issue=result.conflicts?'同時編集を検出しました。別端末の途中演習または同期前バックアップも確認してください。':'';
    message='同期済み（'+new Date().toLocaleTimeString('ja-JP')+'）。'+(result.conflicts?'同時編集を検出しました。別端末の途中演習または同期前バックアップも確認できます。':'問題集と履歴をクラウドに保持しています。');
    if(pending){message='保存中の追加操作を次に同期します。';timer=setTimeout(()=>{timer=null;sync();},1200);}return;
   }
- }catch(e){issue='未同期：'+(e.code||e.message)+'。端末の記録は保持しています。接続回復後に再試行します。';}
+ }catch(e){failureCount++;retryAfter=Date.now()+(String(e.code||'').includes('resource-exhausted')?1800000:Math.min(900000,30000*2**Math.min(failureCount,5)));issue='未同期：'+(e.code||e.message)+'。端末の記録は保持しています。接続回復後に再試行します。';}
  finally{busy=false;render();}
 }
 async function connect(){
  if(!configured||!/^https?:$/.test(location.protocol))return;
  if(!connecting)connecting=SparkFirebase.connect(config,(next,error)=>{
-  epoch++;user=next;base=null;lastSyncAt=null;issue=error||'';
+  epoch++;user=next;base=null;cloudRevision=null;retryAfter=0;failureCount=0;lastSyncAt=null;issue=error||'';
   if(user){try{const saved=StudyStorage.getItem(baseKey());base=saved?StudyLibrary.normalize(JSON.parse(saved)):null;}catch{/* A missing baseline is safe: histories are unioned. */}schedule(50);}
   else{clearTimeout(timer);timer=null;message=error||'端末に保存中。ログインすると自動同期します。';render();}
  }).then(value=>{adapter=value;if(user)schedule(50);return value;}).catch(e=>{connecting=null;issue='接続できません：'+e.message;render();throw e;});
@@ -247,13 +249,13 @@ async function connect(){
 }
 find('cloudLogin').onclick=async()=>{try{if(!/^https?:$/.test(location.protocol))throw Error('ログインにはHTTPSの公開URLまたはlocalhostが必要です');await connect();await adapter.login();}catch(e){issue=e.message;render();}};
 find('cloudLogout').onclick=async()=>{try{await sync();await adapter.logout();}catch(e){issue=e.message;render();}};
-async function manualSync(){await sync();showLastSync();}
+async function manualSync(){await sync(true);showLastSync();}
 find('cloudSave').onclick=manualSync;find('cloudLoad').onclick=manualSync;
 find('cloudBackup').onclick=()=>{const raw=StudyStorage.getItem('study-sync-backup');if(raw)download(JSON.parse(raw),'同期前バックアップ.json');else{setText('cloudLastSync','同期による変更前のバックアップはまだありません。');}};
 window.addEventListener('study-saved',()=>schedule());
 window.addEventListener('online',()=>schedule(50));window.addEventListener('focus',()=>{if(user)schedule(100);});
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&user)schedule(100);});
-setInterval(()=>{if(user&&!document.hidden&&!busy)sync();},30000);
+setInterval(()=>{if(user&&!document.hidden&&!busy)sync();},300000);
 render();connect().catch(()=>{});
 })();
 </script></body></html>

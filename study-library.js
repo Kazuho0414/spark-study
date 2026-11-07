@@ -151,7 +151,7 @@ function merge(base,local,remote){
 }
 root.StudyLibrary={KEY,LEGACY_M5,get error(){return error;},get saveError(){return saveError;},validateBank,normalize,merge,equal,needsMigration,backupBeforeMigration,migrationBackups,
  get active(){return active;},get current(){return data(active,library.banks[active]);},get state(){return clone(library.banks[active].state);},
- snapshot:()=>clone(library),list:()=>Object.entries(library.banks).map(([id,e])=>({id,title:data(id,e).title})),
+ cloudSnapshot:value=>storageSnapshot(normalize(value)),snapshot:()=>clone(library),list:()=>Object.entries(library.banks).map(([id,e])=>({id,title:data(id,e).title})),
  capture(s){const normalized=LearningEngine.makeEngine(data(active,library.banks[active])).normalizeState(s);if(equal(normalized,library.banks[active].state)&&!saveError)return false;const next=clone(library);next.banks[active].state=normalized;persist(next);return true;},
  accept(next){persist(next);},
  recover(){storage.setItem('study-recovery-'+Date.now(),storage.getItem(KEY)||storage.getItem('spark-study-v2')||storage.getItem('spark-study-v1')||'{}');error='';persist(library);},
