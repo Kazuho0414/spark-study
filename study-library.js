@@ -31,7 +31,7 @@ function validateBank(raw){
  return {schema_version:1,id:raw.id,title,edition:Number.isInteger(raw.edition)?raw.edition:0,description:typeof raw.description==='string'?raw.description.slice(0,3000):'',exams,variants:[],additional:[],drills:[],generic:true};
 }
 const LEGACY_M5='spark-mock5-20261017',MIGRATION_BACKUP='study-mock1to5-backup:';
-const packaged=[...(root.STUDY_BUNDLED_BANKS||[]),root.EXAM4_BANK].filter(Boolean).map(validateBank),mock5=packaged.find(b=>b.id===LEGACY_M5);
+const packaged=[...(root.STUDY_BUNDLED_BANKS||[]),root.EXAM4_BANK,root.DEPRO_BANK].filter(Boolean).map(validateBank),mock5=packaged.find(b=>b.id===LEGACY_M5);
 const builtin={...root.SPARK_QUESTION_BANK,exams:[...root.SPARK_QUESTION_BANK.exams,...(mock5?mock5.exams.filter(e=>!root.SPARK_QUESTION_BANK.exams.some(x=>x.id===e.id)).map(e=>({...e,title:'本番形式模試 5'})):[]),...(root.SPARK_PRIORITY_EXAMS||[])],additional:root.SPARK_ADDITIONAL_QUESTIONS.questions};
 const bundled=packaged.filter(b=>b.id!==LEGACY_M5);
 function needsMigration(raw){return !!(mock5&&raw?.schema==='study-library-v1'&&raw.banks?.[LEGACY_M5]);}
